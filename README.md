@@ -3,11 +3,13 @@
 `olctl` drives the **Outlook Classic** desktop client on your own machine over
 COM, as you, using the mail profile Outlook already has.
 
-No Azure app registration, no admin consent, no app password, no tenant
-approval. Outlook is already authenticated; the tool just drives it.
+This is for the cases where Graph/Azure is the wrong door or not available:
+no app registration, no admin consent, no app password, no tenant approval.
+Outlook is already authenticated; the tool just drives it.
 
 **Nothing to install.** It is one PowerShell script, and PowerShell ships with
-Windows. Python is no longer involved anywhere.
+Windows. Python is deliberately not involved. The old Python path was too slow
+for day-to-day mailbox triage.
 
 It never sends mail and never hard-deletes anything. Replies are saved as drafts
 for you to review and send.
@@ -16,21 +18,21 @@ for you to review and send.
 
 | File | Role |
 |---|---|
-| `olctl.ps1` | everything — COM engine plus CLI. This is the tool. |
+| `olctl.ps1` | everything: COM engine plus CLI. This is the tool. |
 | `olctl.cmd` | entry point for native Windows `cmd.exe` shells, and a fallback where PowerShell's execution policy is the default `Restricted` |
 | `tests/cli-args.ps1` | regression harness for the argument layer |
-| `agent-config/` | optional example config for driving `olctl` from an AI coding agent — see below |
+| `agent-config/` | optional example config for driving `olctl` from an AI coding agent. See below. |
 
 This is a native Windows PowerShell tool: COM/MAPI is a Windows-only
 mechanism, so it has to run as a Windows process talking directly to
-`outlook.exe`. There is no WSL wrapper and no Linux/cross-platform path — if
+`outlook.exe`. There is no WSL wrapper and no Linux/cross-platform path. If
 an AI coding agent is driving it, it needs to be running on the Windows side
 (or reaching it via `powershell.exe`), not inside a Linux VM or WSL distro.
 
 ## Install
 
 Copy this folder anywhere on the Windows filesystem, then unblock the script
-once — Windows marks anything copied from another machine or downloaded from
+once. Windows marks anything copied from another machine or downloaded from
 the internet, and PowerShell refuses to run a marked script until you clear it:
 
 ```powershell
@@ -43,7 +45,7 @@ To call it as a bare `olctl` from any directory, put the folder on `PATH`.
 **From a PowerShell prompt, prefer `.\olctl.ps1` over `.\olctl.cmd` (or a bare
 `olctl` resolved from `PATH`).** The `.cmd` adds a `cmd.exe` hop, and
 PowerShell 5.1 strips quotes it thinks are unnecessary when calling a legacy
-batch file — so an argument containing `&`, `<`, `>`, `|` or `^` can be
+batch file. An argument containing `&`, `<`, `>`, `|` or `^` can be
 re-parsed by `cmd.exe` as redirection or command separation. A folder or
 subject containing `&` is entirely plausible here. The `.cmd` is for real
 `cmd.exe` shells, or for a user who would rather not deal with PowerShell's
@@ -64,13 +66,13 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 
 If *that* command is itself refused (`...is overridden by a policy defined at
 a more specific scope`), the policy is enforced by Group Policy, not just left
-at the default — run `Get-ExecutionPolicy -List` and look for `MachinePolicy`
+at the default. Run `Get-ExecutionPolicy -List` and look for `MachinePolicy`
 or `UserPolicy` set to anything other than `Undefined`. Group Policy sits above
 both `-Scope CurrentUser` and the `-ExecutionPolicy Bypass` that `olctl.cmd`
 passes internally, so **neither the command above nor `olctl.cmd` can get
-around a real Group-Policy-enforced lock** — that needs an exception from IT
-(or a signed script). Where there is no such lock — the far more common case
-of a machine simply sitting on the Windows default — both fixes above are
+around a real Group-Policy-enforced lock**. That needs an exception from IT
+(or a signed script). Where there is no such lock, which is the far more common
+case of a machine simply sitting on the Windows default, both fixes above are
 genuine, and `olctl.cmd` is a real convenience: it passes `-ExecutionPolicy
 Bypass` for you, so someone who doesn't want to touch `Set-ExecutionPolicy` at
 all can just run it directly.
@@ -78,7 +80,7 @@ all can just run it directly.
 ## Prerequisites
 
 1. **Outlook Classic installed with a configured profile.** Keep using New
-   Outlook day to day — both are views onto the same mailbox, so anything
+   Outlook day to day. Both are views onto the same mailbox, so anything
    `olctl` does through Classic shows up there within seconds. New Outlook has
    no COM interface at all, which is why we go through Classic. If Classic has
    never been opened on this machine, open it once and let the initial sync
@@ -143,7 +145,7 @@ work (`olctl --pretty doctor` and `olctl doctor --pretty`).
 path does not resolve, the error lists the folders that *do* exist at that
 level, so an agent can self-correct in one step.
 
-**Localised mailboxes.** Folder names differ per mailbox — `Inbox`,
+**Localised mailboxes.** Folder names differ per mailbox: `Inbox`,
 `Posteingang`, `Doručená pošta`. Use the real name, or use the English tokens
 (`inbox`, `drafts`, `sent items`, `deleted items`, `junk email`, `outbox`),
 which resolve through that store's own `GetDefaultFolder`:
@@ -161,12 +163,12 @@ a type does not exist in that store, Outlook creates it. An earlier version of
 this tool called it with code 31 during `doctor` and thereby created an empty
 *Quick Step Settings* folder in four mailboxes, including shared ones. Anything
 added here that resolves a folder by type is a potential write, even in a
-command that looks read-only — and `doctor` is not covered by the audit log.
+command that looks read-only. `doctor` is not covered by the audit log.
 Codes 3, 4, 5, 6, 16 and 23 are safe because those folders always exist.
 
 `archive` is deliberately **not** a token. `OlDefaultFolders` 31 is documented
 as `olFolderArchive`, but this Outlook build returns *Quick Step Settings* for
-it — so resolving it by type would file mail into a settings folder. Address a
+it. Resolving it by type would file mail into a settings folder. Address a
 real Archive folder by its own name (`projects/Archive`). `doctor` reports
 `archive` by name when the store has one.
 
@@ -182,7 +184,7 @@ real Archive folder by its own name (`projects/Archive`). `doctor` reports
 
 Worked examples against the fictional `projects` mailbox described above. Full
 sample payloads for every command, including these, live in
-[`examples/`](examples/) — the snippets below are trimmed to the fields that
+[`examples/`](examples/). The snippets below are trimmed to the fields that
 matter for the recipe.
 
 **Triage unread mail from the last few days.** Bound every scan with `--since`
@@ -197,9 +199,9 @@ and `--limit`; the preview is usually enough to decide what needs a closer look:
   "returned": 3,
   "truncated": false,
   "items": [
-    { "subject": "Conference room booking kiosk — pilot feedback", "from_email": "alex.rivera@contoso.com", "has_attachments": true, "flag": null },
-    { "subject": "Warehouse handheld scanner rollout — timeline", "from_email": "sam.patel@contoso.com", "has_attachments": false, "flag": "flagged" },
-    { "subject": "Guest Wi-Fi self-service portal — access request", "from_email": "morgan.ito@northwind-supply.example", "has_attachments": true, "flag": null }
+    { "subject": "Conference room booking kiosk - pilot feedback", "from_email": "alex.rivera@contoso.com", "has_attachments": true, "flag": null },
+    { "subject": "Warehouse handheld scanner rollout - timeline", "from_email": "sam.patel@contoso.com", "has_attachments": false, "flag": "flagged" },
+    { "subject": "Guest Wi-Fi self-service portal - access request", "from_email": "morgan.ito@northwind-supply.example", "has_attachments": true, "flag": null }
   ]
 }
 ```
@@ -220,7 +222,7 @@ against both the display name and address, applied after Outlook's own filter:
 ```
 
 **Flag something for follow-up, then mark it reviewed once handled.** Flag and
-category are independent — flag for "needs action", category for bookkeeping:
+category are independent: flag for "needs action", category for bookkeeping:
 
 ```powershell
 .\olctl.ps1 flag "FEEDFACE...!CAFEBABE..." --text "Confirm rollout order with Sam"
@@ -230,7 +232,7 @@ category are independent — flag for "needs action", category for bookkeeping:
 ```
 
 **Draft a reply without hand-typing into the shell.** Write the body to a file
-and pass the path — `--text` treats an existing file path as a file, anything
+and pass the path. `--text` treats an existing file path as a file, anything
 else as literal text:
 
 ```powershell
@@ -243,10 +245,10 @@ else as literal text:
 { "draft_ref": "BAADF00D...!CAFEBABE...", "saved_to": "Drafts", "sent": false }
 ```
 
-It lands in **Drafts**, unsent, for you to review — see [Safety
+It lands in **Drafts**, unsent, for you to review. See [Safety
 model](#safety-model). Full response: [`examples/draft-reply.json`](examples/draft-reply.json).
 
-**Move a handled item out of the inbox — and what happens if the destination
+**Move a handled item out of the inbox, including protected destination
 is protected.** `move` returns `new_ref`; the old one goes stale immediately:
 
 ```powershell
@@ -272,18 +274,18 @@ than guessing:
 .\olctl.ps1 list --folder "Proejcts/inbox"
 ```
 
-Full response: [`examples/error-not-found.json`](examples/error-not-found.json)
-— note `available_stores` and `well_known` alongside `children`, so the error
+Full response: [`examples/error-not-found.json`](examples/error-not-found.json).
+Note `available_stores` and `well_known` alongside `children`, so the error
 carries enough to recover without another round trip.
 
 ## Safety model
 
-* No `send` and no `delete` command exists. Not gated — absent.
+* No `send` and no `delete` command exists. Not gated. Absent.
 * Deleted Items, Junk Email, Sent Items and Outbox **of every store in the
   profile** are refused as `move` destinations without `--allow-protected`.
   They are resolved per store via `GetDefaultFolder`, so `Gelöschte Elemente`
   and `Odstraněná pošta` are covered without being listed anywhere. `doctor`
-  prints `protected_folders_resolved` — a guard you cannot see is a guard you
+  prints `protected_folders_resolved`. A guard you cannot see is a guard you
   cannot trust.
 * Every mutation is appended to `%USERPROFILE%\.olctl\audit.jsonl`.
 * `--dry-run` on any mutating command.
@@ -304,17 +306,17 @@ Override in `%USERPROFILE%\.olctl\config.json`:
 
 ## Wiring it into an AI coding agent
 
-`olctl` has no dependency on any particular agent or AI vendor — it is a
+`olctl` has no dependency on any particular agent or AI vendor. It is a
 standalone CLI, usable from a plain shell with no AI in the loop at all.
 `agent-config/` is an optional, self-contained example of wiring it into
 [Claude Code](https://claude.com/claude-code) specifically, since that is what
 this example was built and tested against. Nothing in it is required to use
-`olctl`, and nothing here is installed automatically — copy in only what you
+`olctl`, and nothing here is installed automatically. Copy in only what you
 want:
 
 | File in `agent-config/` | Copy to | Purpose |
 |---|---|---|
-| `CLAUDE.md` | your project root | house rules for the agent: read-before-write, ask before batch mutations, never invent a ref, etc. `CLAUDE.md` is Claude Code's own convention for a file it loads automatically; other harnesses look for their own equivalent (e.g. `AGENTS.md`) — the content itself is plain guidance, not Claude-specific, so adapt it freely. |
+| `CLAUDE.md` | your project root | house rules for the agent: read-before-write, ask before batch mutations, never invent a ref, etc. `CLAUDE.md` is Claude Code's own convention for a file it loads automatically; other harnesses look for their own equivalent (e.g. `AGENTS.md`). The content itself is plain guidance, not Claude-specific, so adapt it freely. |
 | `settings.json` | `.claude/settings.json` | a read-only-first permission allowlist: `list`/`get`/`folders`/`doctor`/`--dry-run` are allowed, every mutating command is denied so you get a prompt instead of a surprise. Move lines from `deny` to `allow` once you trust it. |
 | `commands/mail-scan.md` | `.claude/commands/mail-scan.md` | an on-demand slash command that scans a mailbox and triages new requests vs. noise |
 | `skills/project-intake/` | `.claude/skills/project-intake/` | the same scan, packaged as a skill for a scheduled/recurring run |
@@ -336,7 +338,7 @@ to copy verbatim.
 * **Hybrid profiles.** COM does not care which organization a mailbox lives in.
   But secondary and cross-org mailboxes are often mounted in **online mode**
   rather than Cached Exchange Mode, where every `Restrict` and `Items.Count` is
-  a server round trip — far slower, and `--scan-max` starts truncating.
+  a server round trip. That is far slower, and `--scan-max` starts truncating.
   `doctor` reports `cached_mode` per store. Also, `--shared`
   (`GetSharedDefaultFolder`) needs delegate rights resolvable inside one
   organization and generally fails across a hybrid boundary; if the mailbox is
@@ -350,7 +352,7 @@ to copy verbatim.
   scan, but `--sender`, `--subject`, `--category` and `--has-attachments` are
   still applied *after* Outlook's own `Restrict`, so pair them with `--since`.
 * **Date literals.** Outlook's filter syntax wants US-format dates regardless of
-  the Windows locale, and the tool formats them with InvariantCulture — which
+  the Windows locale, and the tool formats them with InvariantCulture. This
   matters on your German/Czech machine, where the local culture would render
   AM/PM in a form `Restrict` rejects. Do not hand-build filters.
 
@@ -371,7 +373,7 @@ pwsh -NoProfile -File tests/cli-args.ps1     # or powershell.exe on Windows
 
 This covers the argument layer: every validation error, both flag positions,
 Unicode folder names, and that well-formed commands reach the COM attach. It
-deliberately stops there — **the COM layer cannot be tested off Windows.** It
+deliberately stops there. **The COM layer cannot be tested off Windows.** It
 was developed against a mock of the Outlook object model and syntax-checked, so
 expect first-contact rough edges; the error envelopes are designed to say
 exactly what went wrong.
