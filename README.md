@@ -1,4 +1,4 @@
-# olctl — a local Outlook CLI
+# olctl - a local Outlook CLI
 
 `olctl` drives the **Outlook Classic** desktop client on your own machine over
 COM, as you, using the mail profile Outlook already has.
