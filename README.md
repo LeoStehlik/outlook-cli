@@ -18,10 +18,10 @@ for you to review and send.
 
 | File | Role |
 |---|---|
-| `olctl.ps1` | everything: COM engine plus CLI. This is the tool. |
-| `olctl.cmd` | entry point for native Windows `cmd.exe` shells, and a fallback where PowerShell's execution policy is the default `Restricted` |
-| `tests/cli-args.ps1` | regression harness for the argument layer |
-| `agent-config/` | optional example config for driving `olctl` from an AI coding agent. See below. |
+| `olctl.ps1` | the Outlook CLI script |
+| `olctl.cmd` | wrapper for running it from `cmd.exe` |
+| `tests/cli-args.ps1` | checks CLI argument parsing without needing Outlook |
+| `agent-config/` | optional example config for agent-driven mailbox triage |
 
 This is a native Windows PowerShell tool: COM/MAPI is a Windows-only
 mechanism, so it has to run as a Windows process talking directly to
@@ -371,7 +371,7 @@ Czech and German folder names when the file is read back elsewhere. Use:
 pwsh -NoProfile -File tests/cli-args.ps1     # or powershell.exe on Windows
 ```
 
-This covers the argument layer: every validation error, both flag positions,
+This checks CLI argument handling: validation errors, both flag positions,
 Unicode folder names, and that well-formed commands reach the COM attach. It
 deliberately stops there. **The COM layer cannot be tested off Windows.** It
 was developed against a mock of the Outlook object model and syntax-checked, so
