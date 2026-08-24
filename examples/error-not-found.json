@@ -1,0 +1,9 @@
+{
+  "ok": false,
+  "code": "not_found",
+  "error": "no store or folder named 'Proejcts'",
+  "detail": null,
+  "children": ["projects", "SA_AutomationAgent", "Contoso Config Tool", "Regional Office", "Api", "Inbox", "Drafts", "Sent Items", "Calendar", "Contacts", "Tasks"],
+  "available_stores": ["jane.doe@contoso.com", "projects", "SA_AutomationAgent", "Contoso Config Tool", "Regional Office", "Api"],
+  "well_known": ["deleted items", "drafts", "inbox", "junk email", "junk", "outbox", "sent items"]
+}

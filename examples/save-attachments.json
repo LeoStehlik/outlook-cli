@@ -1,0 +1,12 @@
+{
+  "ref": "DEADBEEF00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",
+  "subject": "Conference room booking kiosk — pilot feedback",
+  "attachments": 2,
+  "saved": [
+    { "index": 1, "name": "kiosk-touchscreen-1.jpg", "path": "C:\\Users\\jane.doe\\attachments\\kiosk-touchscreen-1.jpg", "bytes": 812004, "dry_run": false },
+    { "index": 2, "name": "kiosk-touchscreen-2.jpg", "path": "C:\\Users\\jane.doe\\attachments\\kiosk-touchscreen-2.jpg", "bytes": 793441, "dry_run": false }
+  ],
+  "skipped": [],
+  "out_dir": "C:\\Users\\jane.doe\\attachments",
+  "dry_run": false
+}

@@ -1,0 +1,12 @@
+{
+  "count": 7,
+  "folders": [
+    { "name": "projects", "path": "projects", "items": null, "unread": null, "depth": 0 },
+    { "name": "Inbox", "path": "projects/Inbox", "items": 214, "unread": 12, "depth": 1 },
+    { "name": "Processed", "path": "projects/Inbox/Processed", "items": 640, "unread": 0, "depth": 2 },
+    { "name": "Needs Owner", "path": "projects/Inbox/Needs Owner", "items": 8, "unread": 3, "depth": 2 },
+    { "name": "Drafts", "path": "projects/Drafts", "items": 2, "unread": 0, "depth": 1 },
+    { "name": "Sent Items", "path": "projects/Sent Items", "items": 301, "unread": 0, "depth": 1 },
+    { "name": "Archive", "path": "projects/Archive", "items": 1822, "unread": 0, "depth": 1 }
+  ]
+}

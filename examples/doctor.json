@@ -1,0 +1,136 @@
+{
+  "outlook_version": "16.0.0.20326",
+  "profile": "Outlook",
+  "current_user": "Jane Doe",
+  "default_inbox": "jane.doe@contoso.com/Inbox",
+  "stores": [
+    {
+      "name": "jane.doe@contoso.com",
+      "store_id": "0000000038A1BB1005E5101AA1BB08002B2A56C2DEADBEEFCAFEBABE00000000",
+      "exchange_store_type": "primary_exchange_mailbox",
+      "cached_mode": true,
+      "data_file": "jane.doe@contoso.com.ost",
+      "default_folders": {
+        "inbox": "Inbox",
+        "drafts": "Drafts",
+        "sent items": "Sent Items",
+        "deleted items": "Deleted Items",
+        "junk email": "Junk Email",
+        "outbox": "Outbox",
+        "archive": "Archive"
+      },
+      "top_level_folders": [
+        "Inbox", "Drafts", "Sent Items", "Deleted Items", "Junk Email",
+        "Outbox", "Archive", "Calendar", "Contacts", "Tasks", "Notes",
+        "Conversation History", "Quick Step Settings"
+      ]
+    },
+    {
+      "name": "projects",
+      "store_id": "0000000038A1BB1005E5101AA1BB08002B2A56C2FEEDFACEBAADF00D00000000",
+      "exchange_store_type": "exchange_mailbox",
+      "cached_mode": false,
+      "data_file": null,
+      "default_folders": {
+        "inbox": "Inbox",
+        "drafts": "Drafts",
+        "sent items": "Sent Items",
+        "deleted items": "Deleted Items",
+        "junk email": "Junk Email",
+        "outbox": "Outbox",
+        "archive": "Archive"
+      },
+      "top_level_folders": [
+        "Inbox", "Drafts", "Sent Items", "Deleted Items", "Junk Email",
+        "Outbox", "Archive", "Quick Step Settings"
+      ]
+    },
+    {
+      "name": "SA_AutomationAgent",
+      "store_id": "0000000038A1BB1005E5101AA1BB08002B2A56C2C0FFEEC0FFEE0000000000",
+      "exchange_store_type": "exchange_mailbox",
+      "cached_mode": false,
+      "data_file": null,
+      "default_folders": {
+        "inbox": "Doručená pošta",
+        "drafts": "Koncepty",
+        "sent items": "Odeslaná pošta",
+        "deleted items": "Odstraněná pošta",
+        "junk email": "Nevyžádaná pošta",
+        "outbox": "Odchozí pošta"
+      },
+      "top_level_folders": [
+        "Doručená pošta", "Koncepty", "Odeslaná pošta", "Odstraněná pošta",
+        "Nevyžádaná pošta", "Odchozí pošta", "Kalendář", "Kontakty", "Úlohy"
+      ]
+    },
+    {
+      "name": "Contoso Config Tool",
+      "store_id": "0000000038A1BB1005E5101AA1BB08002B2A56C2A1B2C3D4E5F600000000000",
+      "exchange_store_type": "exchange_mailbox",
+      "cached_mode": false,
+      "data_file": null,
+      "default_folders": {
+        "inbox": "Posteingang",
+        "drafts": "Entwürfe",
+        "sent items": "Gesendete Elemente",
+        "deleted items": "Gelöschte Elemente",
+        "junk email": "Junk-E-Mail",
+        "outbox": "Postausgang"
+      },
+      "top_level_folders": [
+        "Posteingang", "Entwürfe", "Gesendete Elemente", "Gelöschte Elemente",
+        "Junk-E-Mail", "Postausgang", "Quick Step Settings"
+      ]
+    },
+    {
+      "name": "Regional Office",
+      "store_id": "0000000038A1BB1005E5101AA1BB08002B2A56C2B1C2D3E4F5A600000000000",
+      "exchange_store_type": "exchange_mailbox",
+      "cached_mode": false,
+      "data_file": null,
+      "default_folders": {
+        "inbox": "Posteingang",
+        "drafts": "Entwürfe",
+        "sent items": "Gesendete Objekte",
+        "deleted items": "Gelöschte Objekte",
+        "junk email": "Junk-E-Mail",
+        "outbox": "Postausgang"
+      },
+      "top_level_folders": [
+        "Posteingang", "Entwürfe", "Gesendete Objekte", "Gelöschte Objekte",
+        "Junk-E-Mail", "Postausgang"
+      ]
+    },
+    {
+      "name": "Api",
+      "store_id": "0000000038A1BB1005E5101AA1BB08002B2A56C2D4E5F6A1B2C300000000000",
+      "exchange_store_type": "exchange_mailbox",
+      "cached_mode": false,
+      "data_file": null,
+      "default_folders": {
+        "inbox": "Inbox",
+        "drafts": "Drafts",
+        "sent items": "Sent Items",
+        "deleted items": "Deleted Items",
+        "junk email": "Junk Email",
+        "outbox": "Outbox"
+      },
+      "top_level_folders": [
+        "Inbox", "Drafts", "Sent Items", "Deleted Items", "Junk Email", "Outbox"
+      ]
+    }
+  ],
+  "protected_folders_resolved": [
+    "Api/Deleted Items", "Api/Junk Email", "Api/Outbox", "Api/Sent Items",
+    "Contoso Config Tool/Gelöschte Elemente", "Contoso Config Tool/Gesendete Elemente",
+    "Contoso Config Tool/Junk-E-Mail", "Contoso Config Tool/Postausgang",
+    "Regional Office/Gelöschte Objekte", "Regional Office/Gesendete Objekte",
+    "Regional Office/Junk-E-Mail", "Regional Office/Postausgang",
+    "SA_AutomationAgent/Nevyžádaná pošta", "SA_AutomationAgent/Odchozí pošta",
+    "SA_AutomationAgent/Odeslaná pošta", "SA_AutomationAgent/Odstraněná pošta",
+    "jane.doe@contoso.com/Deleted Items", "jane.doe@contoso.com/Junk Email",
+    "jane.doe@contoso.com/Outbox", "jane.doe@contoso.com/Sent Items",
+    "projects/Deleted Items", "projects/Junk Email", "projects/Outbox", "projects/Sent Items"
+  ]
+}

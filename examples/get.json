@@ -1,0 +1,30 @@
+{
+  "ref": "DEADBEEF00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",
+  "subject": "Conference room booking kiosk — pilot feedback",
+  "from_name": "Alex Rivera",
+  "from_email": "alex.rivera@contoso.com",
+  "received": "2026-08-22T09:14:03",
+  "unread": true,
+  "has_attachments": true,
+  "attachment_count": 2,
+  "categories": ["Facilities"],
+  "flag": null,
+  "importance": 1,
+  "size": 48213,
+  "conversation_id": "0102030405060708090A0B0C0D0E0F1011121314",
+  "folder": "projects/Inbox",
+  "to": "projects",
+  "recipients": [
+    { "kind": "to", "name": "Projects", "email": "projects@contoso.com" },
+    { "kind": "cc", "name": "Sam Patel", "email": "sam.patel@contoso.com" }
+  ],
+  "attachments": [
+    { "index": 1, "name": "kiosk-touchscreen-1.jpg", "size": 812004, "type": 1 },
+    { "index": 2, "name": "kiosk-touchscreen-2.jpg", "size": 793441, "type": 1 }
+  ],
+  "body": "Hi team,\n\nthe third-floor kiosk had two people this week say the touchscreen didn't register a tap on the first try. Photos attached. Otherwise the booking flow itself is getting good feedback from the pilot group - the calendar sync in particular.\n\nCan we get IT to look at recalibrating the digitizer before we roll this out to the other floors?\n\nThanks,\nAlex\n",
+  "body_truncated": false,
+  "sent": "2026-08-22T09:14:00",
+  "reply_to": "Alex Rivera",
+  "internet_message_id": "<AB12CD34-EF56-7890-ABCD-EF1234567890@contoso.com>"
+}

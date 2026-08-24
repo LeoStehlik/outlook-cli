@@ -1,0 +1,9 @@
+{
+  "subject": "Warehouse handheld scanner rollout — timeline",
+  "from": "projects/Inbox",
+  "to": "projects/Inbox/Processed",
+  "old_ref": "FEEDFACE00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",
+  "new_ref": "FACEFEED00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",
+  "note": "the ref changed; use new_ref for further commands",
+  "dry_run": false
+}

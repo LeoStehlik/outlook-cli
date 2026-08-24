@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(olctl doctor*)",
+      "Bash(olctl folders*)",
+      "Bash(olctl list*)",
+      "Bash(olctl get*)",
+      "Bash(olctl save-attachments*)",
+      "Bash(olctl --dry-run*)"
+    ],
+    "deny": [
+      "Bash(olctl move*)",
+      "Bash(olctl mark*)",
+      "Bash(olctl flag*)",
+      "Bash(olctl categorize*)",
+      "Bash(olctl draft-reply*)",
+      "Bash(olctl draft-new*)"
+    ]
+  }
+}

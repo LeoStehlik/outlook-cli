@@ -1,0 +1,7 @@
+{
+  "subject": "Conference room booking kiosk — pilot feedback",
+  "before": ["Facilities"],
+  "after": ["Facilities", "Reviewed"],
+  "ref": "DEADBEEF00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",
+  "dry_run": false
+}
