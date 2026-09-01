@@ -14,6 +14,8 @@ for day-to-day mailbox triage.
 It never sends mail and never hard-deletes anything. Replies are saved as drafts
 for you to review and send.
 
+**v0.4 focus:** make the Windows path obvious: setup matrix, exact first commands, known limits, and a reproducible non-Outlook argument test for agents reviewing the repo from Linux or macOS.
+
 ## Files
 
 | File | Role |
@@ -28,6 +30,27 @@ mechanism, so it has to run as a Windows process talking directly to
 `outlook.exe`. There is no WSL wrapper and no Linux/cross-platform path. If
 an AI coding agent is driving it, it needs to be running on the Windows side
 (or reaching it via `powershell.exe`), not inside a Linux VM or WSL distro.
+
+## First 5 Minutes
+
+| Situation | Run | Expect |
+|---|---|---|
+| You have Windows + Outlook Classic configured | `./olctl.ps1 doctor --pretty` | JSON with profile, stores, default folders, and protected folders |
+| PowerShell blocks the script mark | `Unblock-File .\olctl.ps1` | The script can run from this checkout |
+| User execution policy blocks scripts | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` | User-scope scripts can run without admin rights |
+| Group Policy blocks scripts | `Get-ExecutionPolicy -List` | `MachinePolicy` or `UserPolicy` explains why local bypass is not enough |
+| Agent is reviewing from Linux/macOS | read [`docs/windows-setup-proof.md`](docs/windows-setup-proof.md) | COM cannot be proven there; only docs/examples/static checks can be verified |
+
+Copy-paste smoke path on Windows:
+
+```powershell
+Unblock-File .\olctl.ps1
+.\olctl.ps1 --version
+.\olctl.ps1 doctor --pretty
+.\olctl.ps1 folders --folder inbox --depth 1 --pretty
+```
+
+For the conversion proof and hard limits, read [`docs/windows-setup-proof.md`](docs/windows-setup-proof.md).
 
 ## Install
 

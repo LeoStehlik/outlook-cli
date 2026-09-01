@@ -55,7 +55,7 @@ function CheckCapture {
     }
 }
 
-CheckCapture 'in-process pipe captures the payload' @('--version') 'olctl_version' '0.3.3'
+CheckCapture 'in-process pipe captures the payload' @('--version') 'olctl_version' '0.4.0'
 CheckCapture 'in-process pipe captures errors too' @('list','--unread') 'code' 'bad_argument'
 CheckCapture 'in-process pipe reaches COM'         @('doctor')        'code' 'no_outlook'
 

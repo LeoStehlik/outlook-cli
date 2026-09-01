@@ -31,3 +31,7 @@ Every successful command prints just the object under `data` here — `olctl`
 unwraps it on success so `olctl list ... | jq .items` works directly, and only
 wraps the response in `{"ok": false, ...}` on failure. `error-not-found.json`
 shows that failure shape.
+
+## Setup Walkthrough
+
+- [`first-five-minutes.md`](first-five-minutes.md) shows the first Windows commands and expected failure path.
