@@ -1619,7 +1619,7 @@ function Invoke-OlOp {
 # command line into one engine call, and is where the concerns that do not need
 # COM live: option parsing, date arithmetic, the config file and the audit log.
 
-$script:OLCTL_VERSION = '0.3.3'
+$script:OLCTL_VERSION = '0.4.0'
 
 $script:USAGE = @'
 olctl <command> [options]     local Outlook Classic CLI -- one JSON object per run

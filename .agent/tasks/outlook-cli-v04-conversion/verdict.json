@@ -1,0 +1,34 @@
+{
+  "task_id": "outlook-cli-v04-conversion",
+  "phase": "pre-release-verify",
+  "agent": "builder-local-checks",
+  "timestamp": "2026-09-01T01:25:00Z",
+  "overall": "UNKNOWN",
+  "criteria": [
+    {
+      "id": "AC1",
+      "status": "PASS",
+      "note": "README has setup matrix and first Windows commands near the top."
+    },
+    {
+      "id": "AC2",
+      "status": "PASS",
+      "note": "docs/windows-setup-proof.md covers fit matrix, COM requirement, non-Windows verification limits, and hard limits."
+    },
+    {
+      "id": "AC3",
+      "status": "PASS",
+      "note": "examples/first-five-minutes.md exists and examples/README.md links it."
+    },
+    {
+      "id": "AC4",
+      "status": "UNKNOWN",
+      "note": "Version files are 0.4.0; tag/release pending."
+    },
+    {
+      "id": "AC5",
+      "status": "PASS",
+      "note": "Available static checks pass; pwsh unavailable on Linux host, so runtime COM proof requires Windows + Outlook Classic."
+    }
+  ]
+}
