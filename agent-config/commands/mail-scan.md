@@ -1,7 +1,7 @@
 ---
 description: Scan the project intake mailbox for new project requests and updates to existing initiatives
 argument-hint: "[time window, e.g. 3d, 1w, 2026-08-01 — defaults to 7d]"
-allowed-tools: Bash(olctl list*), Bash(olctl get*), Bash(olctl folders*), Bash(olctl doctor*)
+allowed-tools: Bash(olctl list*), Bash(olctl get*), Bash(olctl thread*), Bash(olctl folders*), Bash(olctl doctor*)
 ---
 
 Scan the `projects` mailbox and extract initiative intake, read-only.
@@ -17,8 +17,10 @@ olctl list --folder "projects/inbox" --since <window> --limit 100
 Read the JSON. Each row already carries subject, sender, date, categories and a
 240-character body preview — enough to triage most rows without opening them.
 
-If `truncated` is `true`, say so explicitly in your report and narrow the window
-rather than silently covering less than I asked for. This mailbox is in online
+If `truncated` is `true`, page on with `--after-cursor <next_cursor>` (same
+filters) until it is `false`, rather than silently covering less than I asked
+for. `truncated_by: scan_max` means mail was skipped unread, not just left for
+the next page. This mailbox is in online
 mode, so each call is a server round trip: one broad `list` beats many small ones.
 
 ## Step 2 — triage from the previews
@@ -40,7 +42,7 @@ real decision in its latest message.
 For rows in the first two buckets:
 
 ```
-olctl get "<ref>" --body text
+olctl get "<ref>" --body text --strip-quoted
 ```
 
 Skip this for noise. Do not call `get` on every row — the preview is usually

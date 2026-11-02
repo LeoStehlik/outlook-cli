@@ -11,6 +11,8 @@ way — no Graph, no PowerShell COM of your own, no OWA automation.
    and `get` before moving, flagging or drafting anything.
 2. **The tool cannot send mail and cannot delete mail.** Replies go to Drafts.
    Never present a draft as "sent" — say it is waiting in Drafts for review.
+   The one exception is `draft-reply --supersede`, which moves an old unsent
+   draft to Deleted Items; only use it on a draft you created in this session.
 3. **Ask before mutating more than 5 items in one go.** Show me the list first.
 4. **Use `--dry-run` when you are unsure** which items a plan would touch, then
    report the plan before executing it.
@@ -89,19 +91,36 @@ path.
 ## Typical commands
 
 ```powershell
-.\olctl.ps1 doctor                                      # check the connection first if anything is odd
+.\olctl.ps1 doctor --quick                              # check the connection first if anything is odd
 .\olctl.ps1 folders --depth 2                           # find the exact folder path
 .\olctl.ps1 list --folder "projects/inbox" --unread --since 3d --limit 20
-.\olctl.ps1 list --folder "projects/inbox" --sender supplier --has-attachments
+.\olctl.ps1 list --folder "projects/inbox" --sender supplier --has-attachments --since 2w
+.\olctl.ps1 list --folder "projects/inbox" --since 2w --body-contains "RE-36713"
+.\olctl.ps1 list --folder "projects/inbox" --since-mark intake --since 7d --save-mark intake --preset noise --limit 100
+.\olctl.ps1 list --folder "projects/inbox" --folder "projects/sent items" --since 1w --limit 50
 .\olctl.ps1 list --folder "projects/inbox" --count-only
-.\olctl.ps1 get "<ref>" --body text
+.\olctl.ps1 get "<ref>" --body text --strip-quoted
+.\olctl.ps1 thread "<ref>" --also "jane.doe@contoso.com/sent items"
 .\olctl.ps1 save-attachments "<ref>" --out C:\Users\<you>\attachments --pattern "*.pdf"
 .\olctl.ps1 mark "<ref>" read
 .\olctl.ps1 flag "<ref>" --text "Follow up"
 .\olctl.ps1 categorize "<ref>" --add "Reviewed"
 .\olctl.ps1 move "<ref>" --to "projects/Inbox/Processed"
+.\olctl.ps1 batch --file plan.jsonl --dry-run           # then the same file without --dry-run
 .\olctl.ps1 draft-reply "<ref>" --text drafts/reply.txt
+.\olctl.ps1 draft-update "<draft_ref>" --text drafts/reply-v2.txt
 ```
+
+## Reading listings
+
+- `truncated: true` means the listing is incomplete. Check `truncated_by`:
+  `limit` means more rows exist, `scan_max` means items were skipped unread.
+  Either way, page on with `--after-cursor <next_cursor>` (same filters)
+  rather than widening `--limit` or silently reporting a partial result.
+- `excluded` counts rows dropped by `--exclude-*` / `--preset`. Report it as
+  the noise count instead of listing those mails.
+- `--save-mark` only moves the mark when the listing is complete; if the
+  response has `mark_note`, page on until it is saved.
 
 ## Efficiency
 
@@ -117,11 +136,23 @@ path.
   in-process tool.
 - Do not call `get` on every row of a listing. The listing already has subject,
   sender, date, flags, categories and a body preview — that is usually enough to
-  decide. Call `get` for the ones that matter.
+  decide. Call `get` for the ones that matter, with `--strip-quoted` unless
+  the quoted history is what you need.
+- For "what happened in this thread", use one `thread` call rather than a
+  `get` per message. Messages with `match: topic` only share the subject; say
+  so if you rely on one.
+- Several mutations go into one `batch` file: one Outlook attach, one
+  permission prompt, and the `--dry-run` of that file is the plan you show me.
 
 ## When drafting replies for me
 
 Write the reply body to a file and pass the path to `--text`, rather than
 embedding long text in a shell argument. Match the language of the incoming
 mail (German for German, Czech for Czech, English otherwise). Keep it short and
-plain. Tell me the `draft_ref` so I can find it.
+plain. Tell me the `draft_ref` and the `saved_to` folder so I can find it, and
+the `from` it will go out as.
+
+When I ask for changes to a draft you made, use `draft-update <draft_ref>`
+rather than a new `draft-reply`, so I do not end up with several versions.
+If it reports `cannot_locate_text`, ask me before using `--whole-body` or
+`--supersede`.

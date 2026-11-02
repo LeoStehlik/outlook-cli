@@ -5,6 +5,8 @@
       "Bash(olctl folders*)",
       "Bash(olctl list*)",
       "Bash(olctl get*)",
+      "Bash(olctl thread*)",
+      "Bash(olctl rules-list*)",
       "Bash(olctl save-attachments*)",
       "Bash(olctl --dry-run*)"
     ],
@@ -13,8 +15,14 @@
       "Bash(olctl mark*)",
       "Bash(olctl flag*)",
       "Bash(olctl categorize*)",
+      "Bash(olctl batch*)",
       "Bash(olctl draft-reply*)",
-      "Bash(olctl draft-new*)"
+      "Bash(olctl draft-new*)",
+      "Bash(olctl draft-update*)",
+      "Bash(olctl folder-add*)",
+      "Bash(olctl rules-add*)",
+      "Bash(olctl rules-delete*)",
+      "Bash(olctl rules-run*)"
     ]
   }
 }

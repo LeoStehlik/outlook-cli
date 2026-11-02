@@ -1,0 +1,48 @@
+{
+  "ref": "C0FFEE00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",
+  "conversation_topic": "Guest Wi-Fi self-service portal",
+  "conversation_id": "2122232425262728292A2B2C2D2E2F3031323334",
+  "method": ["conversation", "topic"],
+  "count": 3,
+  "messages": [
+    {
+      "ref": "ABAD1DEA00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",
+      "subject": "Guest Wi-Fi self-service portal",
+      "from_name": "Morgan Ito",
+      "from_email": "morgan.ito@northwind-supply.example",
+      "received": "2026-08-19T14:02:11",
+      "sent": "2026-08-19T14:01:58",
+      "folder": "projects/Inbox",
+      "match": "topic",
+      "body": "Hello, we would like to offer visitors a self-service guest Wi-Fi portal. Spec attached.",
+      "body_truncated": false,
+      "quoted_chars_removed": 0
+    },
+    {
+      "ref": "FADEDBEE00112233445566778899AABBCCDDEEFF0011223344556677!0DDBA11000112233445566",
+      "subject": "RE: Guest Wi-Fi self-service portal",
+      "from_name": "Jane Doe",
+      "from_email": "jane.doe@contoso.com",
+      "received": "2026-08-20T09:30:40",
+      "sent": "2026-08-20T09:30:40",
+      "folder": "jane.doe@contoso.com/Sent Items",
+      "match": "conversation",
+      "body": "Thanks Morgan - which VLAN would the portal sit on?",
+      "body_truncated": false,
+      "quoted_chars_removed": 1184
+    },
+    {
+      "ref": "C0FFEE00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",
+      "subject": "RE: Guest Wi-Fi self-service portal",
+      "from_name": "Morgan Ito",
+      "from_email": "morgan.ito@northwind-supply.example",
+      "received": "2026-08-22T10:47:19",
+      "sent": "2026-08-22T10:47:02",
+      "folder": "projects/Inbox",
+      "match": "conversation",
+      "body": "The guest VLAN, 30. Updated spec attached.",
+      "body_truncated": false,
+      "quoted_chars_removed": 2410
+    }
+  ]
+}

@@ -4,7 +4,11 @@
   "returned": 3,
   "scanned": 41,
   "skipped_non_mail_or_unreadable": 0,
+  "excluded": 0,
   "truncated": false,
+  "truncated_by": null,
+  "next_cursor": null,
+  "started": "2026-08-22T12:00:05",
   "items": [
     {
       "ref": "DEADBEEF00112233445566778899AABBCCDDEEFF0011223344556677!CAFEBABE0011223344556677",

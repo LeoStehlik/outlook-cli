@@ -24,7 +24,7 @@ Unblock-File .\olctl.ps1
 Expected version shape:
 
 ```json
-{ "olctl_version": "0.4.0" }
+{ "olctl_version": "0.4.1" }
 ```
 
 Expected handled failure when Outlook Classic is unavailable:
@@ -39,8 +39,8 @@ On a non-Windows review host, an agent can still verify:
 
 - `README.md` names the Windows-only requirement and setup path.
 - `examples/*.json` describe command payload shapes without live mail data.
-- `olctl.ps1` contains `$script:OLCTL_VERSION = '0.4.0'`.
-- `tests/cli-args.ps1` expects `0.4.0` for the argument-layer version test.
+- `olctl.ps1` contains `$script:OLCTL_VERSION = '0.4.1'`.
+- `tests/cli-args.ps1` expects `0.4.1` for the argument-layer version test.
 - No command calls `Send()` or performs hard delete behavior.
 
 ## What Requires Windows + Outlook Classic

@@ -1,0 +1,12 @@
+{
+  "count": 3,
+  "succeeded": 2,
+  "failed": 1,
+  "not_run": 0,
+  "dry_run": true,
+  "results": [
+    { "line": 1, "command": "mark", "ok": true, "data": { "dry_run": true, "ref": "FEEDFACE...!CAFEBABE...", "subject": "Warehouse handheld scanner rollout — timeline", "unread": false } },
+    { "line": 2, "command": "categorize", "ok": true, "data": { "dry_run": true, "ref": "FEEDFACE...!CAFEBABE...", "subject": "Warehouse handheld scanner rollout — timeline", "before": [], "after": ["Reviewed"] } },
+    { "line": 4, "command": "move", "ok": false, "error": { "ok": false, "code": "not_found", "error": "folder 'Procesed' not found under 'Inbox'", "detail": null, "children": ["Processed", "Vendors"] } }
+  ]
+}

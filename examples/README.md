@@ -18,11 +18,13 @@ hundred hex characters on each side of the `!`.
 | `folders.json` | `olctl folders --folder projects --depth 2` |
 | `list.json` | `olctl list --folder "projects/inbox" --unread --since 3d` |
 | `get.json` | `olctl get "<ref>" --body text` |
+| `thread.json` | `olctl thread "<ref>" --also "jane.doe@contoso.com/sent items"` |
 | `save-attachments.json` | `olctl save-attachments "<ref>" --out ...` |
 | `move.json` | `olctl move "<ref>" --to "projects/Inbox/Processed"` |
 | `mark.json` | `olctl mark "<ref>" read` |
 | `flag.json` | `olctl flag "<ref>" --text "Follow up"` |
 | `categorize.json` | `olctl categorize "<ref>" --add "Reviewed"` |
+| `batch.json` | `olctl batch --file plan.jsonl --dry-run` (one line failing) |
 | `draft-reply.json` | `olctl draft-reply "<ref>" --text ...` |
 | `draft-new.json` | `olctl draft-new --to ... --subject ... --text ...` |
 | `error-not-found.json` | any command given a folder path that doesn't resolve |
@@ -31,7 +33,3 @@ Every successful command prints just the object under `data` here — `olctl`
 unwraps it on success so `olctl list ... | jq .items` works directly, and only
 wraps the response in `{"ok": false, ...}` on failure. `error-not-found.json`
 shows that failure shape.
-
-## Setup Walkthrough
-
-- [`first-five-minutes.md`](first-five-minutes.md) shows the first Windows commands and expected failure path.

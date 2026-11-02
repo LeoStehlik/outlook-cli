@@ -34,8 +34,9 @@ olctl list --folder "projects/inbox" --since <window> --limit 100
 Each row carries subject, sender, date, categories and a 240-character body
 preview, which is enough to triage most rows without opening them.
 
-If `truncated` is `true`, say so explicitly at the top of the report and narrow
-the window rather than silently covering less than intended. This mailbox is in
+If `truncated` is `true`, page on with `--after-cursor <next_cursor>` (same
+filters) until it is `false`. If you stop early, say so at the top of the
+report rather than silently covering less than intended. This mailbox is in
 online mode, so every call is a server round trip — one broad `list` beats many
 small ones.
 
@@ -69,7 +70,7 @@ decision in its latest message.
 For the first two buckets:
 
 ```
-olctl get "<ref>" --body text
+olctl get "<ref>" --body text --strip-quoted
 ```
 
 Skip noise entirely. Do not call `get` on every row.

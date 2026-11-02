@@ -12,7 +12,8 @@ Windows. Python is deliberately not involved. The old Python path was too slow
 for day-to-day mailbox triage.
 
 It never sends mail and never hard-deletes anything. Replies are saved as drafts
-for you to review and send.
+for you to review and send. The one thing it ever moves to Deleted Items on its
+own is an unsent draft you explicitly replace (`draft-reply --supersede`).
 
 **v0.4 focus:** make the Windows path obvious: setup matrix, exact first commands, known limits, and a reproducible non-Outlook argument test for agents reviewing the repo from Linux or macOS.
 
@@ -137,29 +138,162 @@ Exit 0 = success, 1 = a handled error carrying `code` and a human-readable
 
 | Command | What it does |
 |---|---|
-| `doctor` | Outlook version, profile, stores, cached mode, protected folders |
+| `doctor [--quick]` | Outlook version, profile, stores, cached mode, protected folders; `--quick` skips the per-store folder walk |
 | `folders [--folder P] [--depth N]` | folder tree with item and unread counts |
-| `list --folder P [filters]` | messages, newest first, as JSON rows |
-| `get REF [--body text\|html\|none] [--headers]` | one message in full |
+| `list --folder P [--folder P2 ...] [filters]` | messages, newest first, as JSON rows; several folders are merged into one ordered listing |
+| `get REF [--body text\|html\|none] [--strip-quoted] [--headers]` | one message in full; `--strip-quoted` cuts the quoted history off a text body |
+| `thread REF [--also P ...] [--since T] [--body text\|none] [--keep-quoted]` | every message of the conversation, oldest first, quoted history stripped |
 | `save-attachments REF --out DIR [--pattern "*.pdf"]` | write attachments to disk |
 | `move REF --to P` | move between folders |
 | `mark REF read\|unread` | read state |
 | `flag REF [--text T] [--clear]` | follow-up flag |
 | `categorize REF [--add C] [--remove C] [--set A B]` | categories |
-| `draft-reply REF --text ...` | reply saved to **Drafts**, not sent |
-| `draft-new --to X --subject S --text ...` | new mail saved to **Drafts**, not sent |
+| `batch [--file F \| -] [--stop-on-error]` | many commands on one Outlook attach; one JSON argv array per line |
+| `draft-reply REF --text ... [--all] [--html] [--subject S] [--attach F] [--from ADDR] [--save-to P] [--supersede OLD_REF]` | reply saved to **Drafts**, not sent |
+| `draft-new --to X --subject S --text ... [--cc Y] [--html] [--attach F] [--from ADDR] [--save-to P]` | new mail saved to **Drafts**, not sent |
+| `draft-update DRAFT_REF [--text ...] [--whole-body] [--html] [--subject S] [--from ADDR] [--attach F]` | rewrite an existing draft in place |
+| `folder-add --folder P --name A[/B]` | create folders (a chain of names) |
+| `rules-list [--store S]` | inbox rules of a store with conditions, actions, `is_client_rule` |
+| `rules-add --name N --move-to P [--from a@b,c@d] [--subject-contains w1,w2] [--header-contains d1,d2] [--mark-read] [--stop] [--disabled] [--replace]` | new receive rule |
+| `rules-delete --name N [--store S]` | delete a rule by name |
+| `rules-run [--name N\|--all] [--folder P] [--include-subfolders] [--store S]` | run rules now on a folder (the store's Inbox by default); reports unread counts before and after |
 
 `list` filters: `--unread`, `--read`, `--flagged`, `--since`, `--until`,
-`--sender`, `--subject`, `--category`, `--has-attachments`, `--limit`,
+`--since-mark`, `--save-mark`, `--sender`, `--subject`, `--category`,
+`--has-attachments`, `--body-contains`, `--exclude-sender`, `--exclude-subject`,
+`--preset`, `--include-subfolders`, `--after-cursor`, `--limit`,
 `--oldest-first`, `--count-only`, `--no-preview`, `--any-class`, `--scan-max`.
 
 `--since` / `--until` take `30m`, `6h`, `3d`, `2w`, `2026-08-18`, or
 `2026-08-18T09:30`.
 
-Global: `--pretty`, `--dry-run`, `--version`, `--help`. Both flag positions
-work (`olctl --pretty doctor` and `olctl doctor --pretty`).
+Global: `--pretty`, `--dry-run`, `--json-out FILE`, `--version`, `--help`. Both
+flag positions work (`olctl --pretty doctor` and `olctl doctor --pretty`).
 
 `--text` accepts literal text, a file path, or `-` for stdin.
+
+`rules-add` notes from the field: current Outlook builds hand back
+`olConditionSenderAddress` conditions as an unsettable base-class object, so
+sender matching is done either by exact address (`--from`, resolved through
+the GAL) or by domain via `--header-contains`, which matches the raw RFC822
+headers and therefore also catches per-campaign rotating sender addresses.
+The `--mark-read` flag is attempted in a second pass after the rule is saved
+and reported as `mark_read_applied`; some builds refuse to enable that action
+on any rule object, in which case moved mail stays unread and the checkbox in
+the Rules Wizard is the workaround. `MoveToFolder` needs a late-bound
+property put through `InvokeMember` - the plain PowerShell setter silently
+no-ops and the rule then fails to save.
+
+### Listing: truncation, paging, several folders
+
+Every listing says whether it is complete. `truncated` is `true` when it
+stopped with more to look at, and `truncated_by` says why:
+
+* `limit`: `--limit` rows were returned and there are more items after them.
+* `scan_max`: `--scan-max` items were examined without filling the page.
+  Items were **skipped unread**, not just left for later, so do not report
+  this as "all mail in the window".
+
+Either way `next_cursor` is set. Pass it back unchanged with `--after-cursor`
+(and the same filters and `--oldest-first`) to get the next page; pages join
+without gaps or overlaps, even across mails received in the same second.
+
+Repeat `--folder` to list several folders as one ordered listing (each row's
+`folder` says where it lives), or add `--include-subfolders` to take every
+mail folder below the given one. With `--count-only`, `per_folder` breaks the
+total down.
+
+**Server-side body search.** `--body-contains TEXT` filters on the body in
+Outlook's own `Restrict` (a DASL `LIKE`), so it is a server query rather than
+a scan. It switches the whole filter to `@SQL=` syntax; the `filter` field in
+the response shows exactly what was sent.
+
+**Noise.** `--exclude-sender SUB` and `--exclude-subject SUB` (both
+repeatable, substring, case-insensitive) drop rows after the scan, and the
+response counts them in `excluded`. Recurring sets go into `config.json` as
+presets and are applied with `--preset NAME`:
+
+```json
+{ "presets": { "noise": { "exclude_sender": ["noreply@", "openproject"], "exclude_subject": ["Freigabe"] } } }
+```
+
+**Scan marks.** `--save-mark NAME` records when this listing started, and
+`--since-mark NAME` starts the next one from there, so a daily scan never
+needs a hand-kept "last run" time. On the first run, when the mark does not
+exist yet, `--since` is used instead. A truncated listing does not move the
+mark: page on with `--after-cursor` and the same `--save-mark`, and the last
+page saves it, stamped with the time the first page started. Marks live in
+`%USERPROFILE%\.olctl\marks.json`; nothing in the mailbox changes.
+
+```powershell
+.\olctl.ps1 list --folder "projects/inbox" --since-mark intake --since 7d --save-mark intake --limit 100 --preset noise
+```
+
+### Threads
+
+`thread REF` returns every message of the conversation, oldest first: what
+Outlook's conversation view knows for the item's store (Sent Items included),
+plus a subject search over the item's folder, its store's Inbox and Sent
+Items, and any `--also` folders. Use `--also` for a different store's Sent
+Items, e.g. when replies go out from a personal mailbox. Each message has
+`match`: `conversation` when it shares the conversation ID, `topic` when only
+the subject matched. Some clients start a new conversation ID on reply, so
+`topic` matches are kept but labelled; decide for yourself whether they
+belong. Bodies have their quoted history stripped (`--keep-quoted` to keep it)
+and are capped at 4000 characters each (`--body-chars`).
+
+### Drafts: sender, location, revisions
+
+By default a draft is created in the default mailbox's Drafts, from the
+default account. For a reply that should go out from a shared mailbox:
+
+* `--from ADDR` sets the sender: a profile account with that address is used
+  directly, otherwise it becomes *on behalf of* (shown as From in Outlook;
+  Exchange sends it as that mailbox when you have Send-As).
+* `--save-to P` files the draft in another folder, e.g. `projects/drafts`. The
+  draft is moved there after saving, so `draft_ref` is the moved copy.
+* `"from_by_store": {"projects": "projects@contoso.com"}` in `config.json` does
+  both automatically for `draft-reply` to mail in that store.
+
+The response says what happened: `from`, `from_mode` (`account` /
+`on_behalf`) and the real `saved_to` folder; `get` on the draft shows
+`sent_on_behalf_of` / `send_using_account`. Drafts written without `--html` are
+plain-text format: plain text in an HTML item gets its `<mailto:...>` links
+duplicated on every rewrite.
+
+To revise a draft instead of piling up new ones:
+
+* `draft-update DRAFT_REF --text new.txt` replaces only the text olctl wrote
+  and keeps the quoted original under it. This works for drafts written by
+  0.4.1 or later and not edited in Outlook since; otherwise it fails with
+  `cannot_locate_text`. `--whole-body` replaces the entire body instead.
+* `draft-reply REF --text new.txt --supersede OLD_DRAFT_REF` builds a fresh
+  reply and moves the old draft to its Deleted Items (recoverable). The old ref
+  must be an unsent mail sitting in a Drafts folder, or nothing happens.
+
+### Batch
+
+`batch` reads one JSON array of argv strings per line from `--file` (or `-`,
+stdin), checks every line first, and if all are well-formed runs them on a
+single Outlook attach. Blank lines and `#` comments are skipped.
+
+```text
+["mark", "<ref>", "read"]
+["categorize", "<ref>", "--add", "Reviewed"]
+["move", "<ref>", "--to", "projects/Inbox/Processed"]
+```
+
+`--dry-run` on the batch applies to every line, so the same file can be
+previewed and then run. The result lists each line's `ok` and `data` or
+`error`; `--stop-on-error` stops at the first failure (`not_run` counts the
+rest). Each mutation is audited as if run on its own.
+
+### Output to a file
+
+`--json-out FILE` writes the response as UTF-8 (no BOM) and prints only
+`{"json_out": ..., "bytes": ...}`. Use it instead of `>` in Windows
+PowerShell, which writes UTF-16. Errors are still printed in full and leave the
+file alone.
 
 ### Folder paths
 
@@ -303,7 +437,9 @@ carries enough to recover without another round trip.
 
 ## Safety model
 
-* No `send` and no `delete` command exists. Not gated. Absent.
+* No `send` and no `delete` command exists. Not gated. Absent. The only
+  path to Deleted Items is `draft-reply --supersede`, and only for an unsent
+  draft in a Drafts folder.
 * Deleted Items, Junk Email, Sent Items and Outbox **of every store in the
   profile** are refused as `move` destinations without `--allow-protected`.
   They are resolved per store via `GetDefaultFolder`, so `Gelöschte Elemente`
@@ -321,11 +457,13 @@ Override in `%USERPROFILE%\.olctl\config.json`:
   "protected_folders": ["Deleted Items", "Junk Email", "Sent Items", "Outbox"],
   "max_items": 200,
   "default_body_chars": 20000,
-  "preview_chars": 240
+  "preview_chars": 240,
+  "from_by_store": { "projects": "projects@contoso.com" },
+  "presets": { "noise": { "exclude_sender": ["noreply@"], "exclude_subject": [] } }
 }
 ```
 
-`OLCTL_HOME` moves the config and audit log elsewhere.
+`OLCTL_HOME` moves the config, audit log and scan marks elsewhere.
 
 ## Wiring it into an AI coding agent
 
@@ -340,7 +478,7 @@ want:
 | File in `agent-config/` | Copy to | Purpose |
 |---|---|---|
 | `CLAUDE.md` | your project root | house rules for the agent: read-before-write, ask before batch mutations, never invent a ref, etc. `CLAUDE.md` is Claude Code's own convention for a file it loads automatically; other harnesses look for their own equivalent (e.g. `AGENTS.md`). The content itself is plain guidance, not Claude-specific, so adapt it freely. |
-| `settings.json` | `.claude/settings.json` | a read-only-first permission allowlist: `list`/`get`/`folders`/`doctor`/`--dry-run` are allowed, every mutating command is denied so you get a prompt instead of a surprise. Move lines from `deny` to `allow` once you trust it. |
+| `settings.json` | `.claude/settings.json` | a read-only-first permission allowlist: `list`/`get`/`thread`/`folders`/`doctor`/`rules-list`/`--dry-run` are allowed; every command that changes mail, drafts, folders or rules (including `batch`) is denied. Move lines from `deny` to `allow` once you trust it. |
 | `commands/mail-scan.md` | `.claude/commands/mail-scan.md` | an on-demand slash command that scans a mailbox and triages new requests vs. noise |
 | `skills/project-intake/` | `.claude/skills/project-intake/` | the same scan, packaged as a skill for a scheduled/recurring run |
 
@@ -372,20 +510,28 @@ to copy verbatim.
   e-mail addresses if antivirus is not reporting healthy to Windows Security
   Center. On a managed box it normally is.
 * **Python-side filters are gone; all filtering now runs in-process** during the
-  scan, but `--sender`, `--subject`, `--category` and `--has-attachments` are
-  still applied *after* Outlook's own `Restrict`, so pair them with `--since`.
+  scan, but `--sender`, `--subject`, `--category`, `--has-attachments` and the
+  `--exclude-*`/`--preset` exclusions are still applied *after* Outlook's own
+  `Restrict`, so pair them with `--since`. `--body-contains` is the exception:
+  it runs on the server.
+* **`--strip-quoted` is a heuristic.** It cuts at the first reply separator it
+  recognises (English, German and Czech Outlook headers, `-----Original
+  Message-----`, `On ... wrote:`, `>` blocks). A forwarded mail's content counts
+  as quoted, so "FYI, see below" loses what is below; `quoted_chars_removed`
+  shows how much was cut.
 * **Date literals.** Outlook's filter syntax wants US-format dates regardless of
   the Windows locale, and the tool formats them with InvariantCulture. This
-  matters on your German/Czech machine, where the local culture would render
+  matters on a German or Czech machine, where the local culture would render
   AM/PM in a form `Restrict` rejects. Do not hand-build filters.
 
 ## Reading output on Windows
 
 PowerShell 5.1's `>` and `Out-File` default to UTF-16, which mangles the
-Czech and German folder names when the file is read back elsewhere. Use:
+Czech and German folder names when the file is read back elsewhere. Use
+`--json-out`:
 
 ```powershell
-.\olctl.ps1 doctor --pretty | Out-File -Encoding utf8 doctor.json
+.\olctl.ps1 doctor --pretty --json-out doctor.json
 ```
 
 ## Tests
@@ -394,9 +540,10 @@ Czech and German folder names when the file is read back elsewhere. Use:
 pwsh -NoProfile -File tests/cli-args.ps1     # or powershell.exe on Windows
 ```
 
-This checks CLI argument handling: validation errors, both flag positions,
-Unicode folder names, and that well-formed commands reach the COM attach. It
-deliberately stops there. **The COM layer cannot be tested off Windows.** It
-was developed against a mock of the Outlook object model and syntax-checked, so
-expect first-contact rough edges; the error envelopes are designed to say
-exactly what went wrong.
+This checks CLI argument handling: every validation error, both flag
+positions, Unicode folder names, batch validation, cursors, marks and presets,
+and that well-formed commands get past argument checking. It runs against a
+throwaway `OLCTL_HOME`, and on a machine with Outlook the "accepted" checks
+only run read-only `--count-only` / `doctor --quick` calls. **The COM layer
+itself is not covered**: check it by hand against a real mailbox, read-only or
+`--dry-run` first.
