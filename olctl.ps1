@@ -3031,13 +3031,19 @@ function Invoke-OlOp {
 # doctor --quick and --json-out.
 # 0.4.1: draft-update matches its text ignoring whitespace; text drafts are
 # plain format (no mailto duplication); get shows a draft's sender fields.
-$script:OLCTL_VERSION = '0.4.1'
+# 0.5.0: guide (bundled agent guide), machine policy (policy.json), per-user
+# installer with bundled skills.
+$script:OLCTL_VERSION = '0.5.0'
 
 $script:USAGE = @'
 olctl <command> [options]     local Outlook Classic CLI -- one JSON object per run
 
+Start here
+  guide                                    how to use olctl well (plain text);
+                                           AI agents: read this first
+
 Reading
-  doctor [--quick]                         connection, stores, protected folders
+  doctor [--quick]                         connection, stores, policy, protected folders
   folders [--folder P] [--depth N]         folder tree with counts
   list --folder P [--folder P2 ...] [filters]   messages, newest first
   get REF [--body text|html|none] [--strip-quoted] [--headers]
@@ -3102,6 +3108,94 @@ function Get-OlctlHome {
     $base = $env:USERPROFILE
     if ([string]::IsNullOrEmpty($base)) { $base = $env:HOME }
     return (Join-Path $base '.olctl')
+}
+
+<#
+    Machine policy: %ProgramData%\olctl\policy.json, deployed by IT.
+        { "read_only": true, "disabled_commands": ["rules-add", "rules-delete"] }
+    read_only blocks every command that changes mail, drafts, folders or rules
+    (their --dry-run still works); disabled_commands blocks those outright.
+    OLCTL_POLICY_PATH names an extra policy file that can only tighten: flags
+    are OR-ed and lists unioned, so it is safe for tests and cannot loosen
+    the machine policy. A policy file that exists but cannot be read fails
+    closed. This is a guardrail for an assistant, not a security boundary:
+    a per-user install is writable by its user.
+#>
+$script:OLCTL_MUTATING = @('move', 'mark', 'flag', 'categorize', 'draft-reply', 'draft-new',
+    'draft-update', 'folder-add', 'rules-add', 'rules-delete', 'rules-run')
+
+function Read-OlctlPolicy {
+    $pol = @{ read_only = $false; disabled_commands = @(); sources = @() }
+    $paths = New-Object System.Collections.Generic.List[object]
+    if (-not [string]::IsNullOrEmpty($env:ProgramData)) {
+        [void]$paths.Add((Join-Path (Join-Path $env:ProgramData 'olctl') 'policy.json'))
+    }
+    if (-not [string]::IsNullOrEmpty($env:OLCTL_POLICY_PATH)) { [void]$paths.Add($env:OLCTL_POLICY_PATH) }
+    $disabled = New-Object System.Collections.Generic.List[object]
+    $sources = New-Object System.Collections.Generic.List[object]
+    foreach ($path in $paths) {
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { continue }
+        $parsed = $null
+        try {
+            $parsed = ConvertFrom-Json -InputObject ([IO.File]::ReadAllText($path, [Text.Encoding]::UTF8))
+        } catch {
+            Invoke-OlFail -Code 'bad_policy' -Detail $_.Exception.Message `
+                -Message ('the machine policy ' + $path + ' cannot be read, so olctl refuses to run. Ask IT to fix or remove it.')
+        }
+        [void]$sources.Add($path)
+        if ($null -eq $parsed) { continue }
+        $ro = $parsed.PSObject.Properties['read_only']
+        if (($null -ne $ro) -and ($ro.Value -eq $true)) { $pol['read_only'] = $true }
+        $dc = $parsed.PSObject.Properties['disabled_commands']
+        if ($null -ne $dc) {
+            foreach ($c in @($dc.Value)) {
+                $name = ([string]$c).Trim().ToLowerInvariant()
+                if (($name.Length -gt 0) -and (-not $disabled.Contains($name))) { [void]$disabled.Add($name) }
+            }
+        }
+    }
+    $pol['disabled_commands'] = @($disabled.ToArray())
+    $pol['sources'] = @($sources.ToArray())
+    return $pol
+}
+
+function Assert-OlctlPolicy {
+    param([string]$Cmd, $Policy, [bool]$DryRun)
+    if ($null -eq $Policy) { return }
+    $extra = @{ policy = @($Policy['sources']) }
+    if (@($Policy['disabled_commands']) -contains $Cmd) {
+        Invoke-OlFail -Code 'disabled_by_policy' -Extra $extra `
+            -Message ("'" + $Cmd + "' is disabled on this machine by policy")
+    }
+    if ($Policy['read_only'] -and ($script:OLCTL_MUTATING -contains $Cmd) -and (-not $DryRun)) {
+        Invoke-OlFail -Code 'disabled_by_policy' -Extra $extra `
+            -Message ("olctl is read-only on this machine by policy; '" + $Cmd + "' can only run with --dry-run")
+    }
+}
+
+# The guide ships next to the script (guide\GUIDE.md); the active policy is
+# appended so an agent reading it knows what it may do on this machine.
+function Get-OlctlGuide {
+    param($Policy)
+    $path = Join-Path (Join-Path $PSScriptRoot 'guide') 'GUIDE.md'
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        Invoke-OlFail -Code 'bad_install' -Message ('guide not found at ' + $path + '; reinstall olctl')
+    }
+    $text = [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8).TrimEnd()
+    $lines = New-Object System.Collections.Generic.List[object]
+    [void]$lines.Add('')
+    [void]$lines.Add('## On this machine')
+    [void]$lines.Add('')
+    [void]$lines.Add('- olctl version: ' + $script:OLCTL_VERSION)
+    if ($Policy['read_only']) {
+        [void]$lines.Add('- Policy: READ-ONLY. Commands that change mail or drafts only work with --dry-run.')
+    } else {
+        [void]$lines.Add('- Policy: drafts and mail changes allowed (still: ask the user first).')
+    }
+    if (@($Policy['disabled_commands']).Count -gt 0) {
+        [void]$lines.Add('- Disabled by policy: ' + [string]::Join(', ', @($Policy['disabled_commands'])))
+    }
+    return ($text + "`n" + [string]::Join("`n", $lines.ToArray()) + "`n")
 }
 
 function Read-OlctlConfig {
@@ -3413,9 +3507,10 @@ function Resolve-OlctlText {
     before anything runs.
 #>
 function Get-OlctlCall {
-    param($Pos, $Opt, $Cfg, [bool]$DryRun)
+    param($Pos, $Opt, $Cfg, [bool]$DryRun, $Policy = $null)
 
     $cmd = ([string]$Pos[0]).ToLowerInvariant()
+    Assert-OlctlPolicy -Cmd $cmd -Policy $Policy -DryRun $DryRun
     $a = @{}
     $op = $null
     $auditAs = $null
@@ -3846,7 +3941,7 @@ function Get-OlctlErrorEnvelope {
     run on one Outlook attach. A global --dry-run applies to every line.
 #>
 function Invoke-OlctlBatch {
-    param($Opt, $Cfg, [bool]$DryRun)
+    param($Opt, $Cfg, [bool]$DryRun, $Policy = $null)
 
     $file = Get-OlctlOptString $Opt 'file' '-'
     $raw = ''
@@ -3879,7 +3974,7 @@ function Invoke-OlctlBatch {
             }
             $p = Get-OlctlParsed -Argv $lineArgv
             $lineDry = $DryRun -or $p['opt'].ContainsKey('dry_run')
-            $call = Get-OlctlCall -Pos $p['pos'] -Opt $p['opt'] -Cfg $Cfg -DryRun $lineDry
+            $call = Get-OlctlCall -Pos $p['pos'] -Opt $p['opt'] -Cfg $Cfg -DryRun $lineDry -Policy $Policy
             [void]$calls.Add(@{ line = $lineNo; argv = $lineArgv; call = $call })
         } catch {
             $env = Get-OlctlErrorEnvelope $_
@@ -3955,13 +4050,30 @@ try {
         Write-Output $script:USAGE
         exit 0
     } else {
+        $policy = Read-OlctlPolicy
+        $first = ([string]$pos[0]).ToLowerInvariant()
+        if ($first -eq 'guide') {
+            # Plain text like --help: it is read, not parsed.
+            $guideText = Get-OlctlGuide -Policy $policy
+            if ($script:B64Out) {
+                Write-Output ([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($guideText)))
+            } else {
+                try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch { }
+                Write-Output $guideText
+            }
+            exit 0
+        }
         $cfg = Read-OlctlConfig
         $data = $null
-        if (([string]$pos[0]).ToLowerInvariant() -eq 'batch') {
-            $data = Invoke-OlctlBatch -Opt $opt -Cfg $cfg -DryRun $dryRun
+        if ($first -eq 'batch') {
+            $data = Invoke-OlctlBatch -Opt $opt -Cfg $cfg -DryRun $dryRun -Policy $policy
         } else {
-            $call = Get-OlctlCall -Pos $pos -Opt $opt -Cfg $cfg -DryRun $dryRun
+            $call = Get-OlctlCall -Pos $pos -Opt $opt -Cfg $cfg -DryRun $dryRun -Policy $policy
             $data = Invoke-OlctlRun -Call $call
+            if ($first -eq 'doctor') {
+                $data['policy'] = @{ read_only = [bool]$policy['read_only'];
+                    disabled_commands = @($policy['disabled_commands']); sources = @($policy['sources']) }
+            }
         }
 
         $envelope = @{}

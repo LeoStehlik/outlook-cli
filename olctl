@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# olctl - entry point for bash: Git Bash (the shell Claude Code uses on
+# Windows) and WSL.
+#
+# Outlook COM only exists on the Windows side, so the work happens in
+# olctl.ps1 under powershell.exe. From bash this behaves like any other CLI:
+#
+#   olctl list --folder inbox --unread --since 3d | jq .
+#
+# Overrides:
+#   OLCTL_POWERSHELL   path to powershell.exe (or pwsh.exe) if autodetect fails
+
+set -o pipefail
+
+json_err() {
+  local msg detail
+  msg=$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g')
+  detail=$(printf '%s' "${2:-}" | tr -d '\000-\037' | sed 's/\\/\\\\/g; s/"/\\"/g')
+  printf '{"ok":false,"code":"wrapper","error":"%s","detail":"%s"}\n' "$msg" "$detail"
+  exit 1
+}
+
+# ---------------------------------------------------------- locate self + script
+src="${BASH_SOURCE[0]}"
+while [ -L "$src" ]; do
+  dir="$(cd -P "$(dirname "$src")" && pwd)"
+  src="$(readlink "$src")"
+  [[ $src != /* ]] && src="$dir/$src"
+done
+SELF_DIR="$(cd -P "$(dirname "$src")" && pwd)"
+SCRIPT="$SELF_DIR/olctl.ps1"
+[ -f "$SCRIPT" ] || json_err "olctl.ps1 not found next to the wrapper at $SELF_DIR"
+
+# ------------------------------------------------- Git Bash or WSL, and powershell
+PSEXE="${OLCTL_POWERSHELL:-}"
+if command -v cygpath >/dev/null 2>&1; then
+  to_win() { cygpath -w "$1"; }
+  # We translate paths ourselves; stop MSYS from rewriting arguments that
+  # merely look like paths (folder names, refs) on the way to powershell.exe.
+  export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
+  [ -n "$PSEXE" ] || PSEXE="$(command -v powershell.exe 2>/dev/null)"
+  [ -n "$PSEXE" ] || PSEXE="/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
+elif command -v wslpath >/dev/null 2>&1; then
+  to_win() { wslpath -w "$1"; }
+  if [ -z "$PSEXE" ]; then
+    for c in /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe \
+             /mnt/c/Program\ Files/PowerShell/7/pwsh.exe; do
+      [ -x "$c" ] && { PSEXE="$c"; break; }
+    done
+  fi
+else
+  json_err "neither cygpath (Git Bash) nor wslpath (WSL) found; on plain Windows call olctl.ps1 or olctl.cmd instead"
+fi
+[ -n "$PSEXE" ] || json_err "powershell.exe not found. Set OLCTL_POWERSHELL to its path."
+WIN_SCRIPT="$(to_win "$SCRIPT" 2>/dev/null)" || json_err "could not translate $SCRIPT to a Windows path"
+
+# ------------------------------------------------------------------ path fixups
+# Windows PowerShell cannot see /home, /mnt or /c paths, so file arguments
+# (and --text when it names an existing file) are converted to Windows paths.
+args=(); prev=""; want_help=0
+[ "$#" -eq 0 ] && want_help=1
+for a in "$@"; do
+  case "$a" in --help|-h) want_help=1 ;; esac
+  case "$prev" in
+    --out|--attach|--json-out|--file)
+      [[ $a == /* ]] && a="$(to_win "$a" 2>/dev/null || printf '%s' "$a")" ;;
+    --text)
+      [[ $a == /* && -f $a ]] && a="$(to_win "$a" 2>/dev/null || printf '%s' "$a")" ;;
+  esac
+  args+=("$a"); prev="$a"
+done
+
+# Help is plain text, so it passes straight through without the base64 hop.
+if [ "$want_help" -eq 1 ]; then
+  exec "$PSEXE" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$WIN_SCRIPT" --help
+fi
+
+# --------------------------------------------------------------------- run it
+# --b64out asks for base64 so that non-ASCII text cannot be mangled by
+# whatever code page the Windows console happens to be using.
+raw="$("$PSEXE" -NoProfile -NonInteractive -ExecutionPolicy Bypass \
+        -File "$WIN_SCRIPT" --b64out "${args[@]}")"
+rc=$?
+raw="$(printf '%s' "$raw" | tr -d '\r\n')"
+
+if [ -z "$raw" ]; then
+  json_err "powershell produced no output (exit $rc). If this says an execution policy blocked the script, run: Unblock-File '$(printf '%s' "$WIN_SCRIPT")'" "exit=$rc"
+fi
+
+if ! decoded="$(printf '%s' "$raw" | base64 -d 2>/dev/null)"; then
+  json_err "powershell returned something that was not the expected base64 payload (exit $rc)" "$raw"
+fi
+
+printf '%s\n' "$decoded"
+exit $rc

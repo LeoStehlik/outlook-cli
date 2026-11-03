@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.5.0
+
+Packaging for organisation-wide, per-user deployment.
+
+- `olctl guide`: prints the bundled agent guide (`guide/GUIDE.md`): house
+  rules, commands with examples, written for users of their own mailbox, plus
+  what this machine's policy allows. Ships with the tool, so it always matches
+  the installed version.
+- Machine policy `%ProgramData%\olctl\policy.json`: `read_only` (changes
+  only with `--dry-run`) and `disabled_commands`, enforced for every command
+  including `batch` lines; `disabled_by_policy` / `bad_policy` errors; `doctor`
+  reports the active policy. `OLCTL_POLICY_PATH` can only tighten it.
+- `install.ps1` / `uninstall.ps1`: per-user install to
+  `%LOCALAPPDATA%\Programs\olctl`, user PATH, Claude Code skills in
+  `~\.claude\skills`, version under `HKCU\Software\olctl`. No admin rights.
+  Never overwrites a folder or skill it did not create.
+- New `olctl` bash wrapper for Git Bash (Claude Code on Windows) and WSL on
+  the same machine.
+- Bundled skills: `olctl` (points at `olctl guide`, pre-approves read-only
+  commands) and `olctl-mail-scan` (read-only inbox triage).
+- `tests/contract.ps1`: the JSON contract of every command, checked against
+  `examples/` and, with `-Live`, a real inbox. Five out-of-date examples fixed.
+- `packaging/build.ps1` (tests, then stage and zip) and `packaging/README.md`
+  (Intune / ConfigMgr settings, detection, updates, execution policy).
+
 ## v0.4.1
 
 Brings the published code up from 0.3.3 to the current line. v0.4.0 was a

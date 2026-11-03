@@ -20,9 +20,19 @@
         "archive": "Archive"
       },
       "top_level_folders": [
-        "Inbox", "Drafts", "Sent Items", "Deleted Items", "Junk Email",
-        "Outbox", "Archive", "Calendar", "Contacts", "Tasks", "Notes",
-        "Conversation History", "Quick Step Settings"
+        "Inbox",
+        "Drafts",
+        "Sent Items",
+        "Deleted Items",
+        "Junk Email",
+        "Outbox",
+        "Archive",
+        "Calendar",
+        "Contacts",
+        "Tasks",
+        "Notes",
+        "Conversation History",
+        "Quick Step Settings"
       ]
     },
     {
@@ -41,8 +51,14 @@
         "archive": "Archive"
       },
       "top_level_folders": [
-        "Inbox", "Drafts", "Sent Items", "Deleted Items", "Junk Email",
-        "Outbox", "Archive", "Quick Step Settings"
+        "Inbox",
+        "Drafts",
+        "Sent Items",
+        "Deleted Items",
+        "Junk Email",
+        "Outbox",
+        "Archive",
+        "Quick Step Settings"
       ]
     },
     {
@@ -60,8 +76,15 @@
         "outbox": "Odchozí pošta"
       },
       "top_level_folders": [
-        "Doručená pošta", "Koncepty", "Odeslaná pošta", "Odstraněná pošta",
-        "Nevyžádaná pošta", "Odchozí pošta", "Kalendář", "Kontakty", "Úlohy"
+        "Doručená pošta",
+        "Koncepty",
+        "Odeslaná pošta",
+        "Odstraněná pošta",
+        "Nevyžádaná pošta",
+        "Odchozí pošta",
+        "Kalendář",
+        "Kontakty",
+        "Úlohy"
       ]
     },
     {
@@ -79,8 +102,13 @@
         "outbox": "Postausgang"
       },
       "top_level_folders": [
-        "Posteingang", "Entwürfe", "Gesendete Elemente", "Gelöschte Elemente",
-        "Junk-E-Mail", "Postausgang", "Quick Step Settings"
+        "Posteingang",
+        "Entwürfe",
+        "Gesendete Elemente",
+        "Gelöschte Elemente",
+        "Junk-E-Mail",
+        "Postausgang",
+        "Quick Step Settings"
       ]
     },
     {
@@ -98,8 +126,12 @@
         "outbox": "Postausgang"
       },
       "top_level_folders": [
-        "Posteingang", "Entwürfe", "Gesendete Objekte", "Gelöschte Objekte",
-        "Junk-E-Mail", "Postausgang"
+        "Posteingang",
+        "Entwürfe",
+        "Gesendete Objekte",
+        "Gelöschte Objekte",
+        "Junk-E-Mail",
+        "Postausgang"
       ]
     },
     {
@@ -117,20 +149,44 @@
         "outbox": "Outbox"
       },
       "top_level_folders": [
-        "Inbox", "Drafts", "Sent Items", "Deleted Items", "Junk Email", "Outbox"
+        "Inbox",
+        "Drafts",
+        "Sent Items",
+        "Deleted Items",
+        "Junk Email",
+        "Outbox"
       ]
     }
   ],
   "protected_folders_resolved": [
-    "Api/Deleted Items", "Api/Junk Email", "Api/Outbox", "Api/Sent Items",
-    "Contoso Config Tool/Gelöschte Elemente", "Contoso Config Tool/Gesendete Elemente",
-    "Contoso Config Tool/Junk-E-Mail", "Contoso Config Tool/Postausgang",
-    "Regional Office/Gelöschte Objekte", "Regional Office/Gesendete Objekte",
-    "Regional Office/Junk-E-Mail", "Regional Office/Postausgang",
-    "SA_AutomationAgent/Nevyžádaná pošta", "SA_AutomationAgent/Odchozí pošta",
-    "SA_AutomationAgent/Odeslaná pošta", "SA_AutomationAgent/Odstraněná pošta",
-    "jane.doe@contoso.com/Deleted Items", "jane.doe@contoso.com/Junk Email",
-    "jane.doe@contoso.com/Outbox", "jane.doe@contoso.com/Sent Items",
-    "projects/Deleted Items", "projects/Junk Email", "projects/Outbox", "projects/Sent Items"
-  ]
+    "Api/Deleted Items",
+    "Api/Junk Email",
+    "Api/Outbox",
+    "Api/Sent Items",
+    "Contoso Config Tool/Gelöschte Elemente",
+    "Contoso Config Tool/Gesendete Elemente",
+    "Contoso Config Tool/Junk-E-Mail",
+    "Contoso Config Tool/Postausgang",
+    "Regional Office/Gelöschte Objekte",
+    "Regional Office/Gesendete Objekte",
+    "Regional Office/Junk-E-Mail",
+    "Regional Office/Postausgang",
+    "SA_AutomationAgent/Nevyžádaná pošta",
+    "SA_AutomationAgent/Odchozí pošta",
+    "SA_AutomationAgent/Odeslaná pošta",
+    "SA_AutomationAgent/Odstraněná pošta",
+    "jane.doe@contoso.com/Deleted Items",
+    "jane.doe@contoso.com/Junk Email",
+    "jane.doe@contoso.com/Outbox",
+    "jane.doe@contoso.com/Sent Items",
+    "projects/Deleted Items",
+    "projects/Junk Email",
+    "projects/Outbox",
+    "projects/Sent Items"
+  ],
+  "policy": {
+    "read_only": false,
+    "disabled_commands": [],
+    "sources": []
+  }
 }

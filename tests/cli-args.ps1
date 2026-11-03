@@ -98,6 +98,38 @@ try { $written = ([IO.File]::ReadAllText($jo) | ConvertFrom-Json).olctl_version 
 if (($r.rc -eq 0) -and ($r.out -match 'json_out') -and ($null -ne $written)) { Write-Output 'PASS  --json-out writes the file' }
 else { $fails++; Write-Output ('FAIL  --json-out writes the file  out=' + $r.out.Trim()) }
 
+# guide is plain text, bundled next to the script, with the policy appended.
+$r = Invoke-Olctl @('guide')
+if (($r.rc -eq 0) -and ($r.out -match 'House rules') -and ($r.out -match 'On this machine')) { Write-Output 'PASS  guide prints the bundled guide' }
+else { $fails++; Write-Output ('FAIL  guide prints the bundled guide  rc=' + $r.rc + ' out=' + $r.out.Substring(0, [Math]::Min(200, $r.out.Length))) }
+
+# Policy. OLCTL_POLICY_PATH can only tighten the machine policy, so it is
+# safe to drive these checks with it.
+$polRO = Join-Path $tmp 'policy-ro.json'
+[IO.File]::WriteAllText($polRO, '{"read_only": true}')
+$polDis = Join-Path $tmp 'policy-disabled.json'
+[IO.File]::WriteAllText($polDis, '{"disabled_commands": ["move", "rules-add"]}')
+$polBad = Join-Path $tmp 'policy-bad.json'
+[IO.File]::WriteAllText($polBad, '{ not json')
+$batchMark = Join-Path $tmp 'mark.jsonl'
+[IO.File]::WriteAllText($batchMark, "[""mark"", ""A!B"", ""read""]`n")
+
+$env:OLCTL_POLICY_PATH = $polRO
+Check 'read-only blocks mark'            @('mark','A!B','read')                         'disabled_by_policy'
+Check 'read-only blocks batch lines'     @('batch','--file',$batchMark)                 'disabled_by_policy'
+CheckAccepted 'read-only allows --dry-run' @('mark','A!B','read','--dry-run')
+CheckAccepted 'read-only allows list'    @('list','--folder','inbox','--since','1d','--count-only')
+$r = Invoke-Olctl @('guide')
+if ($r.out -match 'READ-ONLY') { Write-Output 'PASS  guide shows read-only policy' }
+else { $fails++; Write-Output 'FAIL  guide shows read-only policy' }
+$env:OLCTL_POLICY_PATH = $polDis
+Check 'disabled command blocked'         @('move','A!B','--to','inbox/x','--dry-run')   'disabled_by_policy'
+CheckAccepted 'other commands still run' @('mark','A!B','read','--dry-run')
+$env:OLCTL_POLICY_PATH = $polBad
+Check 'unreadable policy fails closed'   @('list','--folder','inbox','--since','1d')    'bad_policy'
+Check 'version still works'              @('--version')                                 '"olctl_version"' 0
+Remove-Item Env:\OLCTL_POLICY_PATH
+
 # The payload must travel through the PIPELINE, not the console handle, or
 # `.\olctl.ps1 ... | ConvertFrom-Json` captures nothing when the script is
 # dot-invoked in-process. This regressed once; keep it tested.
@@ -118,7 +150,7 @@ function CheckCapture {
     }
 }
 
-CheckCapture 'in-process pipe captures the payload' @('--version') 'olctl_version' '0.4.1'
+CheckCapture 'in-process pipe captures the payload' @('--version') 'olctl_version' '0.5.0'
 CheckCapture 'in-process pipe captures errors too' @('list','--unread') 'code' 'bad_argument'
 
 Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue

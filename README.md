@@ -7,15 +7,18 @@ This is for the cases where Graph/Azure is the wrong door or not available:
 no app registration, no admin consent, no app password, no tenant approval.
 Outlook is already authenticated; the tool just drives it.
 
-**Nothing to install.** It is one PowerShell script, and PowerShell ships with
-Windows. Python is deliberately not involved. The old Python path was too slow
-for day-to-day mailbox triage.
+**No admin rights, no dependencies.** It is one PowerShell script, and
+PowerShell ships with Windows. The optional installer is per-user and needs no
+elevation either. Python is deliberately not involved. The old Python path was
+too slow for day-to-day mailbox triage.
 
 It never sends mail and never hard-deletes anything. Replies are saved as drafts
 for you to review and send. The one thing it ever moves to Deleted Items on its
 own is an unsent draft you explicitly replace (`draft-reply --supersede`).
 
-**v0.4 focus:** make the Windows path obvious: setup matrix, exact first commands, known limits, and a reproducible non-Outlook argument test for agents reviewing the repo from Linux or macOS.
+**v0.5 focus:** deployment to many users: a per-user installer with no admin
+rights, a bundled agent guide (`olctl guide`), an optional machine policy, and
+contract tests for the JSON every command returns.
 
 ## Files
 
@@ -23,14 +26,20 @@ own is an unsent draft you explicitly replace (`draft-reply --supersede`).
 |---|---|
 | `olctl.ps1` | the Outlook CLI script |
 | `olctl.cmd` | wrapper for running it from `cmd.exe` |
+| `olctl` | wrapper for bash: Git Bash (the shell Claude Code uses on Windows) and WSL on the same machine; calls `olctl.ps1` through `powershell.exe` |
+| `guide/GUIDE.md` | the agent guide that `olctl guide` prints: house rules and command reference |
+| `skills/` | Claude Code skills the installer puts in `~\.claude\skills` |
+| `install.ps1`, `uninstall.ps1` | per-user install and removal, no admin rights |
+| `packaging/` | builds the deployment package; notes for IT (Intune / ConfigMgr) |
 | `tests/cli-args.ps1` | checks CLI argument parsing without needing Outlook |
+| `tests/contract.ps1` | the JSON contract of every command, checked against `examples/` and, with `-Live`, a real mailbox |
 | `agent-config/` | optional example config for agent-driven mailbox triage |
 
 This is a native Windows PowerShell tool: COM/MAPI is a Windows-only
 mechanism, so it has to run as a Windows process talking directly to
-`outlook.exe`. There is no WSL wrapper and no Linux/cross-platform path. If
-an AI coding agent is driving it, it needs to be running on the Windows side
-(or reaching it via `powershell.exe`), not inside a Linux VM or WSL distro.
+`outlook.exe`. The bash wrapper only forwards to `powershell.exe`: it works
+from Git Bash and from WSL on the same Windows machine, but not from a Linux
+VM, macOS or a remote box.
 
 ## First 5 Minutes
 
@@ -54,6 +63,28 @@ Unblock-File .\olctl.ps1
 For the conversion proof and hard limits, read [`docs/windows-setup-proof.md`](docs/windows-setup-proof.md).
 
 ## Install
+
+### Per-user installer
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1
+```
+
+From a checkout or an unpacked package (`packaging\build.ps1` makes one), this:
+
+* copies olctl to `%LOCALAPPDATA%\Programs\olctl` and adds that folder to the
+  **user** PATH, so `olctl` works in new PowerShell, cmd and Git Bash windows;
+* installs the bundled Claude Code skills (`olctl`, `olctl-mail-scan`) into
+  `%USERPROFILE%\.claude\skills`. A skill folder of the same name that olctl
+  did not create is left alone and reported;
+* records the version under `HKCU:\Software\olctl` for deployment tools.
+
+No admin rights are needed at any point. Running it again updates in place.
+`uninstall.ps1` (also copied into the install folder) removes all of it and
+keeps the user's own `%USERPROFILE%\.olctl` (config, audit log, scan marks).
+For deploying to many users, see [`packaging/README.md`](packaging/README.md).
+
+### Manual
 
 Copy this folder anywhere on the Windows filesystem, then unblock the script
 once. Windows marks anything copied from another machine or downloaded from
@@ -138,6 +169,7 @@ Exit 0 = success, 1 = a handled error carrying `code` and a human-readable
 
 | Command | What it does |
 |---|---|
+| `guide` | the agent guide: house rules, commands, this machine's policy (plain text) |
 | `doctor [--quick]` | Outlook version, profile, stores, cached mode, protected folders; `--quick` skips the per-store folder walk |
 | `folders [--folder P] [--depth N]` | folder tree with item and unread counts |
 | `list --folder P [--folder P2 ...] [filters]` | messages, newest first, as JSON rows; several folders are merged into one ordered listing |
@@ -465,10 +497,47 @@ Override in `%USERPROFILE%\.olctl\config.json`:
 
 `OLCTL_HOME` moves the config, audit log and scan marks elsewhere.
 
+### Machine policy
+
+An administrator can restrict what olctl does on a machine with
+`%ProgramData%\olctl\policy.json`:
+
+```json
+{ "read_only": true, "disabled_commands": ["rules-add", "rules-delete", "rules-run", "folder-add"] }
+```
+
+* `read_only` blocks every command that changes mail, drafts, folders or
+  rules (`move`, `mark`, `flag`, `categorize`, `draft-*`, `folder-add`,
+  `rules-add`/`-delete`/`-run`), including inside `batch`. Their `--dry-run`
+  still works, so an assistant can still show what it would do.
+* `disabled_commands` blocks the named commands outright.
+* Blocked commands fail with `disabled_by_policy`. `doctor` reports the active
+  policy, and `olctl guide` tells the agent what it may do on this machine.
+* A policy file that exists but cannot be read makes every command fail with
+  `bad_policy`, rather than running unrestricted.
+* `OLCTL_POLICY_PATH` names an extra policy file that can only **tighten**
+  (flags are OR-ed, lists merged). It exists for testing and cannot loosen the
+  machine policy.
+
+The policy keeps an assistant inside agreed limits. It is not a security
+boundary: a per-user install is writable by its user.
+
 ## Wiring it into an AI coding agent
 
 `olctl` has no dependency on any particular agent or AI vendor. It is a
 standalone CLI, usable from a plain shell with no AI in the loop at all.
+
+**`olctl guide`** prints the guide for whoever drives it: the house rules
+(read before write, ask before changing anything, drafts are never sent,
+never invent a ref), the commands with examples, and what this machine's
+policy allows. It ships with the tool, so it always matches the installed
+version. Any agent can be told "run `olctl guide` first".
+
+The installer also puts two Claude Code skills in `~\.claude\skills`: `olctl`
+(points Claude at `olctl guide` and pre-approves the read-only commands) and
+`olctl-mail-scan` (a read-only inbox triage). Nothing else in the user's
+Claude Code setup is touched.
+
 `agent-config/` is an optional, self-contained example of wiring it into
 [Claude Code](https://claude.com/claude-code) specifically, since that is what
 this example was built and tested against. Nothing in it is required to use
@@ -541,9 +610,24 @@ pwsh -NoProfile -File tests/cli-args.ps1     # or powershell.exe on Windows
 ```
 
 This checks CLI argument handling: every validation error, both flag
-positions, Unicode folder names, batch validation, cursors, marks and presets,
-and that well-formed commands get past argument checking. It runs against a
+positions, Unicode folder names, batch validation, cursors, marks, presets,
+the guide and the machine policy, and that well-formed commands get past
+argument checking. It runs against a
 throwaway `OLCTL_HOME`, and on a machine with Outlook the "accepted" checks
 only run read-only `--count-only` / `doctor --quick` calls. **The COM layer
-itself is not covered**: check it by hand against a real mailbox, read-only or
+itself is not covered** by this file.
+
+```powershell
+powershell -File tests\contract.ps1           # examples\*.json, no Outlook needed
+powershell -File tests\contract.ps1 -Live     # plus real read-only runs against your inbox
+```
+
+`tests/contract.ps1` holds the **JSON contract**: the keys and types of every
+command's response. Skills, scripts and agents depend on these shapes, so the
+rule is: adding a key is a minor change; removing or retyping one is a
+breaking change and needs a major version. `examples/` must always pass it.
+`-Live` only runs `doctor --quick`, `list`, `get`, `thread` and a `batch` of
+`get` against your own inbox. Check anything that changes mail by hand,
 `--dry-run` first.
+
+`packaging\build.ps1` runs both test files before it builds a package.

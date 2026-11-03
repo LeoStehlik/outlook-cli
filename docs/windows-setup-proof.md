@@ -9,8 +9,9 @@
 | Windows 10/11 + Outlook Classic configured | yes | PowerShell can talk to Outlook COM/MAPI as the logged-in user. |
 | Windows 10/11 + New Outlook only | no | New Outlook has no COM interface. Install/open Classic once. |
 | Windows + Outlook Classic but Group Policy blocks scripts | blocked | Group Policy beats `RemoteSigned` and the `.cmd` bypass. Ask for a signed script or policy exception. |
-| WSL/Linux/macOS | no | COM/MAPI must run in a Windows process attached to Outlook Classic. |
-| Agent on Linux controlling a Windows host | possible | The command must execute on Windows, for example through a Windows shell, not inside WSL. |
+| Git Bash or WSL on the same Windows machine | yes | The `olctl` bash wrapper forwards to `powershell.exe`, which runs on Windows. |
+| Linux VM/macOS/remote box | no | COM/MAPI must run in a Windows process attached to Outlook Classic. |
+| Agent on Linux controlling a Windows host | possible | The command must execute on Windows, for example through a Windows shell. |
 
 ## First Commands
 
