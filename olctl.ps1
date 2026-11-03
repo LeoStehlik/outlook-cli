@@ -3033,7 +3033,8 @@ function Invoke-OlOp {
 # plain format (no mailto duplication); get shows a draft's sender fields.
 # 0.5.0: guide (bundled agent guide), machine policy (policy.json), per-user
 # installer with bundled skills.
-$script:OLCTL_VERSION = '0.5.0'
+# 0.6.0: update (fetch and install the latest release; get-olctl.ps1).
+$script:OLCTL_VERSION = '0.6.0'
 
 $script:USAGE = @'
 olctl <command> [options]     local Outlook Classic CLI -- one JSON object per run
@@ -3041,6 +3042,8 @@ olctl <command> [options]     local Outlook Classic CLI -- one JSON object per r
 Start here
   guide                                    how to use olctl well (plain text);
                                            AI agents: read this first
+  update [--check]                         install the latest release (--check
+                                           or --dry-run only reports)
 
 Reading
   doctor [--quick]                         connection, stores, policy, protected folders
@@ -3196,6 +3199,42 @@ function Get-OlctlGuide {
         [void]$lines.Add('- Disabled by policy: ' + [string]::Join(', ', @($Policy['disabled_commands'])))
     }
     return ($text + "`n" + [string]::Join("`n", $lines.ToArray()) + "`n")
+}
+
+# update runs get-olctl.ps1 from the install folder, which fetches the latest
+# release and runs its install.ps1 into this same folder. Only an install made
+# by install.ps1 updates itself; a checkout is updated with git.
+function Invoke-OlctlUpdate {
+    param($Opt, [bool]$DryRun)
+    if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot '.olctl-install'))) {
+        Invoke-OlFail -Code 'not_installed' -Message ('olctl runs from ' + $PSScriptRoot +
+            ', which is not an install made by install.ps1; update a checkout with git pull')
+    }
+    $getter = Join-Path $PSScriptRoot 'get-olctl.ps1'
+    if (-not (Test-Path -LiteralPath $getter -PathType Leaf)) {
+        Invoke-OlFail -Code 'bad_install' -Message ('get-olctl.ps1 not found in ' + $PSScriptRoot + '; reinstall olctl')
+    }
+    $a = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $getter, '-Destination', $PSScriptRoot)
+    $skillsRoot = $null
+    try { $skillsRoot = (Get-ItemProperty -Path 'HKCU:\Software\olctl' -Name 'SkillsRoot' -ErrorAction Stop).SkillsRoot } catch { }
+    if (-not [string]::IsNullOrEmpty($skillsRoot)) { $a += @('-SkillsRoot', $skillsRoot) }
+    if ($Opt.ContainsKey('check') -or $DryRun) { $a += '-CheckOnly' }
+    $lines = @(& powershell.exe @a 2>&1 | ForEach-Object { [string]$_ })
+    $json = @($lines | Where-Object { $_.StartsWith('{') })
+    if ($json.Count -eq 0) {
+        Invoke-OlFail -Code 'error' -Message 'get-olctl.ps1 printed no result' -Detail ([string]::Join("`n", $lines))
+    }
+    $r = ConvertFrom-Json -InputObject $json[$json.Count - 1]
+    if ($r.ok -ne $true) {
+        $detail = $null
+        if ($null -ne $r.PSObject.Properties['detail']) { $detail = $r.detail }
+        Invoke-OlFail -Code ([string]$r.code) -Message ([string]$r.error) -Detail $detail
+    }
+    $data = [ordered]@{}
+    foreach ($p in $r.PSObject.Properties) { if ($p.Name -ne 'ok') { $data[$p.Name] = $p.Value } }
+    $data['install_output'] = @($data['install_output'])
+    $data['dry_run'] = [bool]$DryRun
+    return $data
 }
 
 function Read-OlctlConfig {
@@ -3398,7 +3437,7 @@ $script:OLCTL_FLAGS = @(
     'any_class', 'count_only', 'headers', 'overwrite', 'all', 'html', 'clear',
     'allow_protected', 'pretty', 'dry_run', 'b64out', 'help', 'h', 'version',
     'mark_read', 'stop', 'disabled', 'replace', 'include_subfolders',
-    'quick', 'strip_quoted', 'keep_quoted', 'whole_body', 'stop_on_error'
+    'quick', 'strip_quoted', 'keep_quoted', 'whole_body', 'stop_on_error', 'check'
 )
 $script:OLCTL_VALUES = @(
     'folder', 'shared', 'since', 'until', 'sender', 'subject', 'category', 'limit',
@@ -4063,11 +4102,16 @@ try {
             }
             exit 0
         }
-        $cfg = Read-OlctlConfig
         $data = $null
-        if ($first -eq 'batch') {
+        if ($first -eq 'update') {
+            # Touches no mail and needs no config, so it does not attach to Outlook.
+            Assert-OlctlPolicy -Cmd 'update' -Policy $policy -DryRun $dryRun
+            $data = Invoke-OlctlUpdate -Opt $opt -DryRun $dryRun
+        } elseif ($first -eq 'batch') {
+            $cfg = Read-OlctlConfig
             $data = Invoke-OlctlBatch -Opt $opt -Cfg $cfg -DryRun $dryRun -Policy $policy
         } else {
+            $cfg = Read-OlctlConfig
             $call = Get-OlctlCall -Pos $pos -Opt $opt -Cfg $cfg -DryRun $dryRun -Policy $policy
             $data = Invoke-OlctlRun -Call $call
             if ($first -eq 'doctor') {

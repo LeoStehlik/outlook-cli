@@ -7,6 +7,8 @@
     installed (only folders carrying the .olctl-managed marker) and
     HKCU:\Software\olctl. Locations come from that registry key, so it works
     whether it is run from the deployment package or from the install folder.
+    If the installer changed the user's execution policy, it is put back,
+    unless it has been changed again since.
     The user's own data (%USERPROFILE%\.olctl: config, audit log, scan marks)
     is kept.
 #>
@@ -60,6 +62,14 @@ try {
             Write-Output ('Removed ' + $Destination)
         } else {
             Write-Output ('Left ' + $Destination + ' alone: it was not created by the olctl installer')
+        }
+    }
+
+    if (($null -ne $reg) -and ($null -ne $reg.PSObject.Properties['ExecutionPolicyBefore'])) {
+        $before = [string]$reg.ExecutionPolicyBefore
+        if ([string](Get-ExecutionPolicy -Scope CurrentUser) -eq 'RemoteSigned') {
+            try { Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy $before -Force } catch { }
+            Write-Output ('Restored the CurrentUser execution policy to ' + $before)
         }
     }
 

@@ -56,6 +56,9 @@ $Shapes = @{
                     saved = 'array'; skipped = 'array'; out_dir = 'string'; dry_run = 'bool' } }
     batch  = @{ keys = [ordered]@{ count = 'int'; succeeded = 'int'; failed = 'int'; not_run = 'int'
                     dry_run = 'bool'; results = 'array' } }
+    update = @{ keys = [ordered]@{ current = 'string?'; latest = 'string'; target = 'string'; tag = 'string'
+                    update_available = 'bool'; installed = 'bool'; destination = 'string'
+                    install_output = 'array'; dry_run = 'bool' } }
     error  = @{ keys = [ordered]@{ ok = 'bool'; code = 'string'; error = 'string' } }
 }
 
@@ -112,7 +115,7 @@ $examples = @{
     'list.json' = 'list'; 'get.json' = 'get'; 'thread.json' = 'thread'; 'doctor.json' = 'doctor'
     'folders.json' = 'folders'; 'move.json' = 'move'; 'mark.json' = 'mark'; 'flag.json' = 'flag'
     'categorize.json' = 'categorize'; 'draft-reply.json' = 'draft_reply'; 'draft-new.json' = 'draft_new'
-    'save-attachments.json' = 'save_attachments'; 'batch.json' = 'batch'; 'error-not-found.json' = 'error'
+    'save-attachments.json' = 'save_attachments'; 'batch.json' = 'batch'; 'update.json' = 'update'; 'error-not-found.json' = 'error'
 }
 foreach ($f in ($examples.Keys | Sort-Object)) {
     $path = Join-Path (Join-Path $repo 'examples') $f

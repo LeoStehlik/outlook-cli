@@ -32,7 +32,7 @@ $stage = Join-Path $dist ('olctl-' + $version)
 if (Test-Path -LiteralPath $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
 [void](New-Item -ItemType Directory -Path $stage -Force)
 
-foreach ($p in @('olctl.ps1', 'olctl.cmd', 'guide', 'skills', 'install.ps1', 'uninstall.ps1', 'LICENSE')) {
+foreach ($p in @('olctl.ps1', 'olctl.cmd', 'guide', 'skills', 'install.ps1', 'uninstall.ps1', 'get-olctl.ps1', 'LICENSE')) {
     $from = Join-Path $repo $p
     if (Test-Path -LiteralPath $from) { Copy-Item -LiteralPath $from -Destination (Join-Path $stage $p) -Recurse -Force }
 }

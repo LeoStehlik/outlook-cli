@@ -1,0 +1,21 @@
+{
+  "current": "0.6.0",
+  "latest": "0.6.0",
+  "target": "0.6.0",
+  "tag": "v0.6.0",
+  "update_available": true,
+  "installed": true,
+  "destination": "C:\\Users\\alex.rivera\\AppData\\Local\\Programs\\olctl",
+  "install_output": [
+    "Installing olctl 0.6.0 to C:\\Users\\alex.rivera\\AppData\\Local\\Programs\\olctl",
+    "Copied olctl.ps1, olctl.cmd, olctl, guide, uninstall.ps1, get-olctl.ps1",
+    "Already on the user PATH",
+    "Execution policy is RemoteSigned (CurrentUser); left as it is",
+    "Installed skill olctl",
+    "Installed skill olctl-mail-scan",
+    "Recorded version 0.6.0 under HKCU:\\Software\\olctl",
+    "Done. Check with: olctl doctor --quick"
+  ],
+  "previous": "0.5.0",
+  "dry_run": false
+}

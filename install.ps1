@@ -7,7 +7,13 @@
     user's PATH, installs the bundled Claude Code skills into
     %USERPROFILE%\.claude\skills, and records the version under
     HKCU:\Software\olctl for deployment tools to detect. Running it again
-    updates in place. The user's own data (%USERPROFILE%\.olctl: config,
+    updates in place.
+
+    If the user's PowerShell execution policy would block olctl.ps1 (the
+    Windows client default is Restricted), it sets CurrentUser to
+    RemoteSigned, which needs no admin, and records the previous value so
+    uninstall.ps1 can put it back. A policy set by Group Policy is left alone.
+    -NoExecutionPolicy skips this. The user's own data (%USERPROFILE%\.olctl: config,
     audit log, scan marks) is never touched.
 
     Skill folders are only written if olctl created them (they carry a
@@ -21,7 +27,8 @@ param(
     [string]$Destination = (Join-Path $env:LOCALAPPDATA 'Programs\olctl'),
     [string]$SkillsRoot = (Join-Path $env:USERPROFILE '.claude\skills'),
     [switch]$NoSkills,
-    [switch]$NoPath
+    [switch]$NoPath,
+    [switch]$NoExecutionPolicy
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,8 +42,8 @@ function Write-Step {
 }
 
 # Files that make up an install. Anything else in the package (this script,
-# the uninstaller, skills\) is installer material, not runtime.
-$Payload = @('olctl.ps1', 'olctl.cmd', 'olctl', 'guide', 'uninstall.ps1')
+# skills\) is installer material, not runtime.
+$Payload = @('olctl.ps1', 'olctl.cmd', 'olctl', 'guide', 'uninstall.ps1', 'get-olctl.ps1')
 $Marker = '.olctl-install'
 $SkillMarker = '.olctl-managed'
 
@@ -70,6 +77,8 @@ try {
         Copy-Item -LiteralPath $from -Destination $to -Recurse -Force
     }
     [IO.File]::WriteAllText((Join-Path $Destination $Marker), $version)
+    # Files from a download carry the internet mark, which RemoteSigned refuses.
+    Get-ChildItem -LiteralPath $Destination -Recurse -File | Unblock-File
     Write-Step ('Copied ' + [string]::Join(', ', $Payload))
 
     if (-not $NoPath) {
@@ -84,6 +93,35 @@ try {
             $parts += $Destination
             [Environment]::SetEnvironmentVariable('Path', [string]::Join(';', $parts), 'User')
             Write-Step 'Added to the user PATH (new terminals pick it up)'
+        }
+    }
+
+    $policyBefore = $null
+    if (-not $NoExecutionPolicy) {
+        # This process runs with -ExecutionPolicy Bypass, so look at the scopes
+        # that apply to the user's own shells: Group Policy first, then user,
+        # then machine; nothing set means the client default, Restricted.
+        $effective = 'Restricted'
+        $source = 'default'
+        foreach ($scope in @('MachinePolicy', 'UserPolicy', 'CurrentUser', 'LocalMachine')) {
+            $v = [string](Get-ExecutionPolicy -Scope $scope)
+            if ($v -ne 'Undefined') { $effective = $v; $source = $scope; break }
+        }
+        if (@('Restricted', 'AllSigned') -notcontains $effective) {
+            Write-Step ('Execution policy is ' + $effective + ' (' + $source + '); left as it is')
+        } elseif (@('MachinePolicy', 'UserPolicy') -contains $source) {
+            Write-Step ('Execution policy is ' + $effective + ', set by Group Policy; olctl.ps1 will not run in PowerShell itself (Git Bash and cmd still work)')
+        } else {
+            $policyBefore = [string](Get-ExecutionPolicy -Scope CurrentUser)
+            # Saved even when it reports that a narrower scope (this process's
+            # Bypass) overrides it, so check the stored value, not the error.
+            try { Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force } catch { }
+            if ([string](Get-ExecutionPolicy -Scope CurrentUser) -eq 'RemoteSigned') {
+                Write-Step ('Set the CurrentUser execution policy to RemoteSigned (was ' + $policyBefore + ')')
+            } else {
+                $policyBefore = $null
+                Write-Step 'Could not set the CurrentUser execution policy; olctl.ps1 may not run in PowerShell itself (Git Bash and cmd still work)'
+            }
         }
     }
 
@@ -114,6 +152,7 @@ try {
     Set-ItemProperty -Path $key -Name 'InstallPath' -Value $Destination
     Set-ItemProperty -Path $key -Name 'SkillsRoot' -Value $SkillsRoot
     Set-ItemProperty -Path $key -Name 'InstalledAt' -Value ((Get-Date).ToString('yyyy-MM-ddTHH:mm:ss'))
+    if ($null -ne $policyBefore) { Set-ItemProperty -Path $key -Name 'ExecutionPolicyBefore' -Value $policyBefore }
     Write-Step ('Recorded version ' + $version + ' under ' + $key)
 
     Write-Step 'Done. Check with: olctl doctor --quick'

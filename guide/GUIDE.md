@@ -111,3 +111,6 @@ olctl save-attachments "<ref>" --out C:\Users\<user>\Downloads\mail --pattern "*
 `olctl doctor --quick` checks that Outlook Classic is reachable. `no_outlook`
 means Outlook Classic is not installed or has no profile: the user should open
 Outlook Classic once and let it finish setting up.
+
+`olctl update --check` tells you whether a newer olctl exists. Ask the user
+before running `olctl update`, which installs it.

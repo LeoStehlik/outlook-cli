@@ -81,6 +81,7 @@ Check 'batch rejects bad lines'     @('batch','--file',$batchBad)               
 Check 'batch cannot nest'           @('batch','--file',$batchNested)                 'cannot be nested'
 Check 'batch validates argv'        @('batch','--file',$batchArgs)                   'nothing was run'
 Check 'batch file must exist'       @('batch','--file',(Join-Path $tmp 'missing.jsonl')) 'bad_argument'
+Check 'update needs an install'     @('update','--check')                            'not_installed'
 
 # These are well-formed, so they get as far as the COM attach (or beyond).
 CheckAccepted 'doctor reaches COM'        @('doctor','--quick')
@@ -108,7 +109,7 @@ else { $fails++; Write-Output ('FAIL  guide prints the bundled guide  rc=' + $r.
 $polRO = Join-Path $tmp 'policy-ro.json'
 [IO.File]::WriteAllText($polRO, '{"read_only": true}')
 $polDis = Join-Path $tmp 'policy-disabled.json'
-[IO.File]::WriteAllText($polDis, '{"disabled_commands": ["move", "rules-add"]}')
+[IO.File]::WriteAllText($polDis, '{"disabled_commands": ["move", "rules-add", "update"]}')
 $polBad = Join-Path $tmp 'policy-bad.json'
 [IO.File]::WriteAllText($polBad, '{ not json')
 $batchMark = Join-Path $tmp 'mark.jsonl'
@@ -124,6 +125,7 @@ if ($r.out -match 'READ-ONLY') { Write-Output 'PASS  guide shows read-only polic
 else { $fails++; Write-Output 'FAIL  guide shows read-only policy' }
 $env:OLCTL_POLICY_PATH = $polDis
 Check 'disabled command blocked'         @('move','A!B','--to','inbox/x','--dry-run')   'disabled_by_policy'
+Check 'update can be disabled'          @('update','--check')                          'disabled_by_policy'
 CheckAccepted 'other commands still run' @('mark','A!B','read','--dry-run')
 $env:OLCTL_POLICY_PATH = $polBad
 Check 'unreadable policy fails closed'   @('list','--folder','inbox','--since','1d')    'bad_policy'
@@ -150,7 +152,7 @@ function CheckCapture {
     }
 }
 
-CheckCapture 'in-process pipe captures the payload' @('--version') 'olctl_version' '0.5.0'
+CheckCapture 'in-process pipe captures the payload' @('--version') 'olctl_version' '0.6.0'
 CheckCapture 'in-process pipe captures errors too' @('list','--unread') 'code' 'bad_argument'
 
 Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue

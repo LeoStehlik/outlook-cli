@@ -16,7 +16,9 @@ It never sends mail and never hard-deletes anything. Replies are saved as drafts
 for you to review and send. The one thing it ever moves to Deleted Items on its
 own is an unsent draft you explicitly replace (`draft-reply --supersede`).
 
-**v0.5 focus:** deployment to many users: a per-user installer with no admin
+**v0.6 focus:** install by asking your agent (`INSTALL.md`), `olctl update`,
+and the installer setting the execution policy when needed. v0.5 added a
+per-user installer with no admin
 rights, a bundled agent guide (`olctl guide`), an optional machine policy, and
 contract tests for the JSON every command returns.
 
@@ -30,6 +32,8 @@ contract tests for the JSON every command returns.
 | `guide/GUIDE.md` | the agent guide that `olctl guide` prints: house rules and command reference |
 | `skills/` | Claude Code skills the installer puts in `~\.claude\skills` |
 | `install.ps1`, `uninstall.ps1` | per-user install and removal, no admin rights |
+| `get-olctl.ps1` | fetches the latest release and runs its installer; also what `olctl update` uses |
+| `INSTALL.md` | install steps written for an AI agent |
 | `packaging/` | builds the deployment package; notes for IT (Intune / ConfigMgr) |
 | `tests/cli-args.ps1` | checks CLI argument parsing without needing Outlook |
 | `tests/contract.ps1` | the JSON contract of every command, checked against `examples/` and, with `-Live`, a real mailbox |
@@ -64,6 +68,25 @@ For the conversion proof and hard limits, read [`docs/windows-setup-proof.md`](d
 
 ## Install
 
+### Ask your agent
+
+Tell Claude Code (or any agent that can run commands on your Windows machine):
+
+> Install olctl by following
+> https://raw.githubusercontent.com/LeoStehlik/outlook-cli/master/INSTALL.md
+
+[`INSTALL.md`](INSTALL.md) has it download `get-olctl.ps1`, which picks the
+newest `vX.Y.Z` release tag, downloads that tag's source archive and runs the
+installer below, then checks the result with `olctl doctor --quick`. No login
+or token is needed.
+
+Later, `olctl update --check` reports whether a newer release exists and
+`olctl update` installs it into the same folder.
+
+To distribute from your own Git server instead, run `get-olctl.ps1` with
+`-TagsUrl`, `-TagPattern` and `-ArchiveUrl` (see the parameters at the top of
+the script), or edit their defaults in your copy.
+
 ### Per-user installer
 
 ```powershell
@@ -77,7 +100,12 @@ From a checkout or an unpacked package (`packaging\build.ps1` makes one), this:
 * installs the bundled Claude Code skills (`olctl`, `olctl-mail-scan`) into
   `%USERPROFILE%\.claude\skills`. A skill folder of the same name that olctl
   did not create is left alone and reported;
-* records the version under `HKCU:\Software\olctl` for deployment tools.
+* records the version under `HKCU:\Software\olctl` for deployment tools;
+* if the user's execution policy would block `olctl.ps1` (`Restricted`, the
+  Windows client default, or `AllSigned`), sets the **CurrentUser** policy to
+  `RemoteSigned`, which needs no admin, and remembers the old value so
+  `uninstall.ps1` restores it. A policy set by Group Policy is left alone.
+  `-NoExecutionPolicy` skips this step.
 
 No admin rights are needed at any point. Running it again updates in place.
 `uninstall.ps1` (also copied into the install folder) removes all of it and
@@ -170,6 +198,7 @@ Exit 0 = success, 1 = a handled error carrying `code` and a human-readable
 | Command | What it does |
 |---|---|
 | `guide` | the agent guide: house rules, commands, this machine's policy (plain text) |
+| `update [--check]` | install the latest release into this install folder; `--check` or `--dry-run` only reports. Needs an install made by `install.ps1` |
 | `doctor [--quick]` | Outlook version, profile, stores, cached mode, protected folders; `--quick` skips the per-store folder walk |
 | `folders [--folder P] [--depth N]` | folder tree with item and unread counts |
 | `list --folder P [--folder P2 ...] [filters]` | messages, newest first, as JSON rows; several folders are merged into one ordered listing |

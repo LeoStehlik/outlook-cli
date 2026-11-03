@@ -45,6 +45,10 @@ detection value, and set it to **supersede** the previous one (with
 "Uninstall previous version" off: the installer updates in place). Roll it out
 to a pilot group first.
 
+Where Intune manages the version, stop users updating on their own, or the
+detection value no longer matches: add `"update"` to `disabled_commands` in
+the machine policy (below).
+
 ## ConfigMgr
 
 Same commands in a Script Installer deployment type, installation behaviour
@@ -67,10 +71,11 @@ README for exactly what it blocks.
 
 | Where | What |
 |---|---|
-| `%LOCALAPPDATA%\Programs\olctl\` | `olctl.ps1`, `olctl.cmd`, `olctl` (bash), `guide\`, `uninstall.ps1`, `install.log`, `.olctl-install` marker |
+| `%LOCALAPPDATA%\Programs\olctl\` | `olctl.ps1`, `olctl.cmd`, `olctl` (bash), `guide\`, `uninstall.ps1`, `get-olctl.ps1`, `install.log`, `.olctl-install` marker |
 | User PATH | that folder, added once |
 | `%USERPROFILE%\.claude\skills\olctl`, `...\olctl-mail-scan` | Claude Code skills, each with a `.olctl-managed` marker. Existing folders of the same name without the marker are left alone. |
-| `HKCU\Software\olctl` | `Version`, `InstallPath`, `SkillsRoot`, `InstalledAt` |
+| `HKCU\Software\olctl` | `Version`, `InstallPath`, `SkillsRoot`, `InstalledAt`, and `ExecutionPolicyBefore` if it changed the policy |
+| CurrentUser execution policy | set to `RemoteSigned`, only if it would otherwise block olctl and Group Policy does not set it |
 
 It refuses to install into a non-empty folder it did not create. Uninstall
 removes exactly the items above, and keeps `%USERPROFILE%\.olctl` (the user's
@@ -81,19 +86,19 @@ config, audit log and scan marks).
 The package is not signed. The install and uninstall commands above pass
 `-ExecutionPolicy Bypass`, so they run whatever the policy is.
 
-Day-to-day use depends on the shell:
+For day-to-day use, the installer makes sure the user's own shells can run
+olctl. If the policy that applies to the user is `Restricted` (the Windows
+client default) or `AllSigned`, it sets the **CurrentUser** scope to
+`RemoteSigned`. That needs no admin rights and affects only that user. It
+records the previous value under `HKCU\Software\olctl` and `uninstall.ps1`
+restores it. `install.ps1 -NoExecutionPolicy` skips this.
 
-| Shell | Runs | Under the Windows default (`Restricted`) |
-|---|---|---|
-| Git Bash, which Claude Code on Windows uses | `olctl` (bash), which calls `powershell -ExecutionPolicy Bypass` | works |
-| cmd.exe | `olctl.cmd`, which also passes `Bypass` | works |
-| PowerShell | `olctl.ps1` directly | **blocked**: "running scripts is disabled" |
+If Group Policy sets the execution policy (`MachinePolicy` or `UserPolicy` in
+`Get-ExecutionPolicy -List`), the installer leaves it alone, since nothing
+below Group Policy can override it, and logs that. olctl then still works from
+Git Bash, which Claude Code uses, and from cmd, because both entry points pass
+`-ExecutionPolicy Bypass`. Only running `olctl.ps1` directly in PowerShell is
+blocked.
 
-So on machines still at the Windows client default, PowerShell users (and
-agents using a PowerShell tool) need the policy relaxed. Either IT sets
-`RemoteSigned` through Intune or GPO, which is common on managed fleets, or
-each user runs `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, which
-needs no admin. The installer deliberately does not change the policy itself.
-
-If the machines enforce `AllSigned` or AppLocker/WDAC script rules, the
-script would need to be signed first.
+If the machines enforce `AllSigned` through Group Policy, or AppLocker/WDAC
+script rules, the script would need to be signed first.

@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.6.0
+
+Install and update without IT: an agent can install olctl from this repository.
+
+- `get-olctl.ps1`: finds the newest `vX.Y.Z` tag through the GitHub tags
+  API, downloads that tag's source archive and runs its `install.ps1`. No
+  login or token needed. Prints one JSON object. `-TagsUrl`, `-TagPattern`
+  and `-ArchiveUrl` point it at another host, such as an internal GitLab.
+- `INSTALL.md`: install steps for an AI agent, so "install olctl by following
+  INSTALL.md" is the whole request.
+- `olctl update [--check]`: runs the bundled `get-olctl.ps1` into the install
+  folder. Only for installs made by `install.ps1` (`not_installed` otherwise);
+  can be switched off with `"update"` in the policy's `disabled_commands`.
+- `install.ps1` sets the CurrentUser execution policy to `RemoteSigned` when
+  the policy would otherwise block olctl (not when Group Policy sets it), and
+  `uninstall.ps1` restores the previous value. `-NoExecutionPolicy` skips it.
+  Installed files are unblocked.
+
 ## v0.5.0
 
 Packaging for organisation-wide, per-user deployment.
