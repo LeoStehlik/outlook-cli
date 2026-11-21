@@ -3034,7 +3034,7 @@ function Invoke-OlOp {
 # 0.5.0: guide (bundled agent guide), machine policy (policy.json), per-user
 # installer with bundled skills.
 # 0.6.0: update (fetch and install the latest release; get-olctl.ps1).
-$script:OLCTL_VERSION = '0.6.0'
+$script:OLCTL_VERSION = '0.6.2'
 
 $script:USAGE = @'
 olctl <command> [options]     local Outlook Classic CLI -- one JSON object per run

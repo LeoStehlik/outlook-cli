@@ -3,9 +3,9 @@
 
         powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1
 
-    Copies olctl into %LOCALAPPDATA%\Programs\olctl, puts that folder on the
-    user's PATH, installs the bundled Claude Code skills into
-    %USERPROFILE%\.claude\skills, and records the version under
+    Copies olctl into %USERPROFILE%\olctl, puts that folder on the
+    user's PATH, installs the bundled agent skills into
+    %USERPROFILE%\.claude\skills (or -SkillsRoot), and records the version under
     HKCU:\Software\olctl for deployment tools to detect. Running it again
     updates in place.
 
@@ -24,7 +24,7 @@
 #>
 
 param(
-    [string]$Destination = (Join-Path $env:LOCALAPPDATA 'Programs\olctl'),
+    [string]$Destination = (Join-Path $env:USERPROFILE 'olctl'),
     [string]$SkillsRoot = (Join-Path $env:USERPROFILE '.claude\skills'),
     [switch]$NoSkills,
     [switch]$NoPath,

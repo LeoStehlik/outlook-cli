@@ -28,9 +28,9 @@ contract tests for the JSON every command returns.
 |---|---|
 | `olctl.ps1` | the Outlook CLI script |
 | `olctl.cmd` | wrapper for running it from `cmd.exe` |
-| `olctl` | wrapper for bash: Git Bash (the shell Claude Code uses on Windows) and WSL on the same machine; calls `olctl.ps1` through `powershell.exe` |
+| `olctl` | entry point for bash: Git Bash (which some agents use on Windows) and WSL; calls `olctl.ps1` through `powershell.exe` |
 | `guide/GUIDE.md` | the agent guide that `olctl guide` prints: house rules and command reference |
-| `skills/` | Claude Code skills the installer puts in `~\.claude\skills` |
+| `skills/` | optional agent skills (`SKILL.md` folders) the installer puts in `~\.claude\skills`, or `-SkillsRoot` |
 | `install.ps1`, `uninstall.ps1` | per-user install and removal, no admin rights |
 | `get-olctl.ps1` | fetches the latest release and runs its installer; also what `olctl update` uses |
 | `INSTALL.md` | install steps written for an AI agent |
@@ -70,7 +70,7 @@ For the conversion proof and hard limits, read [`docs/windows-setup-proof.md`](d
 
 ### Ask your agent
 
-Tell Claude Code (or any agent that can run commands on your Windows machine):
+Tell any AI agent that can run commands on your PC:
 
 > Install olctl by following
 > https://raw.githubusercontent.com/LeoStehlik/outlook-cli/master/INSTALL.md
@@ -95,11 +95,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1
 
 From a checkout or an unpacked package (`packaging\build.ps1` makes one), this:
 
-* copies olctl to `%LOCALAPPDATA%\Programs\olctl` and adds that folder to the
+* copies olctl to `%USERPROFILE%\olctl` and adds that folder to the
   **user** PATH, so `olctl` works in new PowerShell, cmd and Git Bash windows;
-* installs the bundled Claude Code skills (`olctl`, `olctl-mail-scan`) into
-  `%USERPROFILE%\.claude\skills`. A skill folder of the same name that olctl
-  did not create is left alone and reported;
+* installs the bundled agent skills (`olctl`, `olctl-mail-scan`) into
+  `%USERPROFILE%\.claude\skills`, or the folder given with `-SkillsRoot`
+  (`-NoSkills` skips them). A skill folder of the same name that olctl did not
+  create is left alone and reported;
 * records the version under `HKCU:\Software\olctl` for deployment tools;
 * if the user's execution policy would block `olctl.ps1` (`Restricted`, the
   Windows client default, or `AllSigned`), sets the **CurrentUser** policy to
@@ -551,27 +552,33 @@ An administrator can restrict what olctl does on a machine with
 The policy keeps an assistant inside agreed limits. It is not a security
 boundary: a per-user install is writable by its user.
 
-## Wiring it into an AI coding agent
+## Wiring it into an AI agent
 
-`olctl` has no dependency on any particular agent or AI vendor. It is a
-standalone CLI, usable from a plain shell with no AI in the loop at all.
+`olctl` has no dependency on any particular agent or AI vendor. it is a
+standalone CLI, usable from a plain shell with no AI in the loop at all. Any
+agent that can run commands on the user's Windows PC can drive it.
 
 **`olctl guide`** prints the guide for whoever drives it: the house rules
 (read before write, ask before changing anything, drafts are never sent,
 never invent a ref), the commands with examples, and what this machine's
 policy allows. It ships with the tool, so it always matches the installed
-version. Any agent can be told "run `olctl guide` first".
+version. This is all an agent needs, as long as it knows olctl exists. A new
+conversation doesn't, and will otherwise say it cannot reach the mail and
+suggest some other mail connector. So the agent's personal, global standing
+instructions (memory, custom instructions, a global `AGENTS.md` or the like)
+need a short note: olctl is installed and is how to work with the user's
+mail; run `olctl guide` first; don't suggest other mail connectors.
+`INSTALL.md` step 4 has the agent add it as part of the install.
 
-The installer also puts two Claude Code skills in `~\.claude\skills`: `olctl`
-(points Claude at `olctl guide` and pre-approves the read-only commands) and
-`olctl-mail-scan` (a read-only inbox triage). Nothing else in the user's
-Claude Code setup is touched.
+The installer also puts two optional skills in the `SKILL.md` format into
+`~\.claude\skills` (or `-SkillsRoot`): `olctl` (points the agent at
+`olctl guide`) and `olctl-mail-scan` (a read-only inbox triage). Agents that
+load skills from that folder pick them up; others simply ignore them.
 
-`agent-config/` is an optional, self-contained example of wiring it into
-[Claude Code](https://claude.com/claude-code) specifically, since that is what
-this example was built and tested against. Nothing in it is required to use
-`olctl`, and nothing here is installed automatically. Copy in only what you
-want:
+`agent-config/` is an optional, self-contained example of a project setup.
+It happens to use Claude Code's file names, since that is what it was first
+tested with. Nothing in it is required to use `olctl`, and nothing here is
+installed automatically. copy in only what you want:
 
 | File in `agent-config/` | Copy to | Purpose |
 |---|---|---|

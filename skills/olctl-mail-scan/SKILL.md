@@ -1,6 +1,6 @@
 ---
 name: olctl-mail-scan
-description: Scan the user's inbox for a time window and report what needs the user's action, what is just information, and what is noise. Read-only. Use when the user asks what is in their mail, what they missed, or what needs attention.
+description: Scan the user's inbox for a time window and report what needs the user's action, what is just information, and what is noise. Read-only. Use when the user asks what is in their mail, what they missed, or what needs attention. Uses the installed olctl command; no other mail connector or plugin is needed.
 argument-hint: "[time window, e.g. 1d, 3d, 1w; defaults to 3d]"
 allowed-tools: Bash(olctl guide*), Bash(olctl list*), Bash(olctl get*), Bash(olctl thread*)
 ---

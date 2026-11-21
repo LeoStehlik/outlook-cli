@@ -152,7 +152,7 @@ function CheckCapture {
     }
 }
 
-CheckCapture 'in-process pipe captures the payload' @('--version') 'olctl_version' '0.6.0'
+CheckCapture 'in-process pipe captures the payload' @('--version') 'olctl_version' '0.6.2'
 CheckCapture 'in-process pipe captures errors too' @('list','--unread') 'code' 'bad_argument'
 
 Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue

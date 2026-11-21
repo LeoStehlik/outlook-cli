@@ -2,7 +2,7 @@
 
 olctl installs **per user**, with **no admin rights**: files go into the user's
 profile, the PATH change is the user's own, and the registry key is under
-HKCU. One package contains the tool, its agent guide and the Claude Code
+HKCU. One package contains the tool, its agent guide and optional agent
 skills.
 
 ## Build the package
@@ -34,7 +34,7 @@ This runs the argument tests and the static contract tests, then produces:
    * Registry: `HKEY_CURRENT_USER\Software\olctl`, value `Version`, String
      comparison **Equals** `<version>`. This is the better choice, because a
      new version is detected as not installed.
-   * File: `%LOCALAPPDATA%\Programs\olctl\olctl.ps1` exists.
+   * File: `%USERPROFILE%\olctl\olctl.ps1` exists.
 4. Requirements: Windows 10/11 with **Outlook Classic** installed. olctl needs
    a Classic profile; it does not work with New Outlook alone.
 5. Assignment: **Available** to the group of users who should have it, so it
@@ -71,9 +71,9 @@ README for exactly what it blocks.
 
 | Where | What |
 |---|---|
-| `%LOCALAPPDATA%\Programs\olctl\` | `olctl.ps1`, `olctl.cmd`, `olctl` (bash), `guide\`, `uninstall.ps1`, `get-olctl.ps1`, `install.log`, `.olctl-install` marker |
+| `%USERPROFILE%\olctl\` (installs before 0.6.1: `%LOCALAPPDATA%\Programs\olctl\`, kept there on update) | `olctl.ps1`, `olctl.cmd`, `olctl` (bash), `guide\`, `uninstall.ps1`, `get-olctl.ps1`, `install.log`, `.olctl-install` marker |
 | User PATH | that folder, added once |
-| `%USERPROFILE%\.claude\skills\olctl`, `...\olctl-mail-scan` | Claude Code skills, each with a `.olctl-managed` marker. Existing folders of the same name without the marker are left alone. |
+| `%USERPROFILE%\.claude\skills\olctl`, `...\olctl-mail-scan` | agent skills (`SKILL.md`), each with a `.olctl-managed` marker. Existing folders of the same name without the marker are left alone. |
 | `HKCU\Software\olctl` | `Version`, `InstallPath`, `SkillsRoot`, `InstalledAt`, and `ExecutionPolicyBefore` if it changed the policy |
 | CurrentUser execution policy | set to `RemoteSigned`, only if it would otherwise block olctl and Group Policy does not set it |
 
@@ -96,7 +96,7 @@ restores it. `install.ps1 -NoExecutionPolicy` skips this.
 If Group Policy sets the execution policy (`MachinePolicy` or `UserPolicy` in
 `Get-ExecutionPolicy -List`), the installer leaves it alone, since nothing
 below Group Policy can override it, and logs that. olctl then still works from
-Git Bash, which Claude Code uses, and from cmd, because both entry points pass
+Git Bash, which some agents use, and from cmd, because both entry points pass
 `-ExecutionPolicy Bypass`. Only running `olctl.ps1` directly in PowerShell is
 blocked.
 

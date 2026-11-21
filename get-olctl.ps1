@@ -17,7 +17,8 @@ param(
     [string]$Version,
     [switch]$CheckOnly,
     [switch]$Force,
-    [string]$Destination = (Join-Path $env:LOCALAPPDATA 'Programs\olctl'),
+    # Default: where olctl is already installed, else %USERPROFILE%\olctl.
+    [string]$Destination,
     [string]$SkillsRoot,
     [switch]$NoSkills,
     [switch]$NoPath,
@@ -40,6 +41,26 @@ function Out-Result {
     param($Data, [int]$Rc)
     Write-Output (ConvertTo-Json -InputObject $Data -Depth 5 -Compress)
     exit $Rc
+}
+
+if ([string]::IsNullOrEmpty($Destination)) {
+    $reg = Get-ItemProperty -Path 'HKCU:\Software\olctl' -ErrorAction SilentlyContinue
+    if (($null -ne $reg) -and $reg.InstallPath) { $Destination = [string]$reg.InstallPath }
+    else { $Destination = Join-Path $env:USERPROFILE 'olctl' }
+}
+
+# Returns $null if a file can be created in $Dir, else the reason.
+function Test-Writable {
+    param([string]$Dir)
+    try {
+        if (-not (Test-Path -LiteralPath $Dir)) { [void](New-Item -ItemType Directory -Path $Dir -Force) }
+        $probe = Join-Path $Dir ('.olctl-write-test-' + [guid]::NewGuid().ToString('N'))
+        [IO.File]::WriteAllText($probe, 'x')
+        Remove-Item -LiteralPath $probe -Force
+        return $null
+    } catch {
+        return $_.Exception.Message
+    }
 }
 
 function Get-InstalledVersion {
@@ -104,6 +125,16 @@ try {
     if ((-not $Force) -and ($result['current'] -eq [string]$pick.version)) {
         $result['ok'] = $true; $result['message'] = 'already up to date'
         Out-Result $result 0
+    }
+
+    # Fail before downloading if the folder cannot be written. In an agent this
+    # is usually its sandbox, not missing admin rights.
+    $why = Test-Writable $Destination
+    if ($null -ne $why) {
+        $result['ok'] = $false; $result['code'] = 'no_write_access'
+        $result['error'] = 'cannot write to ' + $Destination + '; no admin rights are needed for it. If an agent sandbox blocks it, approve running outside the sandbox, or pass -Destination with another folder the user owns'
+        $result['detail'] = $why
+        Out-Result $result 1
     }
 
     $stage = Join-Path ([IO.Path]::GetTempPath()) ('olctl-get-' + [guid]::NewGuid().ToString('N'))

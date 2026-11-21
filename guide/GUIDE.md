@@ -7,6 +7,12 @@ drafts for the user to review and send.
 
 Read this once per session before using olctl.
 
+olctl is how you reach this user's mail. Do not tell the user you cannot
+access their mail, and do not suggest installing a Microsoft 365, Outlook or
+other mail connector or plugin: use olctl. That includes turning work on a
+file or project into an email: write the text, attach the files and create a
+draft with `draft-new`.
+
 ## House rules
 
 1. Read before you write. Use `list`, `get` or `thread` to establish what a

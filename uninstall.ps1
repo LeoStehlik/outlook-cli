@@ -29,7 +29,8 @@ try {
     if (Test-Path $key) { $reg = Get-ItemProperty -Path $key }
     if ([string]::IsNullOrEmpty($Destination)) {
         if (($null -ne $reg) -and $reg.InstallPath) { $Destination = [string]$reg.InstallPath }
-        else { $Destination = Join-Path $env:LOCALAPPDATA 'Programs\olctl' }
+        elseif (Test-Path -LiteralPath (Join-Path $PSScriptRoot '.olctl-install')) { $Destination = $PSScriptRoot }
+        else { $Destination = Join-Path $env:USERPROFILE 'olctl' }
     }
     if ([string]::IsNullOrEmpty($SkillsRoot)) {
         if (($null -ne $reg) -and $reg.SkillsRoot) { $SkillsRoot = [string]$reg.SkillsRoot }

@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.6.2
+
+After install, a new conversation did not know olctl existed, told the user it
+could not reach their mail and suggested installing a Microsoft 365 connector.
+
+- `INSTALL.md` step 4: as part of the install, the agent adds a standing
+  instruction to its app's personal, global instructions: olctl is how to work
+  with the user's mail, run `olctl guide` first, never claim there is no mail
+  access and never suggest another mail connector or plugin.
+- `olctl guide` opens with the same rule, and mentions turning work on a file
+  into a draft with attachments (`draft-new`).
+- The `olctl` skill's description says olctl is already installed and is to be
+  used instead of suggesting other mail connectors; `olctl-mail-scan` says no
+  other connector is needed.
+- `INSTALL.md` and the README are provider- and app-neutral. Step 0 checks only
+  whether the agent can run commands on the user's own Windows PC.
+- The bundled skills are described as optional `SKILL.md` folders; apps that
+  load skills from another folder use `-SkillsRoot`.
+
+## v0.6.1
+
+Fixes from the first installs on real laptops.
+
+- New default install folder `%USERPROFILE%\olctl` instead of
+  `%LOCALAPPDATA%\Programs\olctl`. Existing installs stay where they are:
+  `get-olctl.ps1` and `olctl update` use the `InstallPath` recorded under
+  `HKCU\Software\olctl`.
+- `get-olctl.ps1` checks that the folder can be written before downloading,
+  and fails with `no_write_access` if not. That is usually an agent sandbox,
+  not missing admin rights; the error says so.
+- `INSTALL.md` step 0: the agent first checks that it can run commands on the
+  user's own PC, and stops with advice if it cannot (a plain chat, a cloud
+  sandbox, or an outdated desktop app).
+- `INSTALL.md` uses the `destination` from the install result instead of a
+  fixed path, and on `no_write_access` asks the user to approve running
+  outside the sandbox, or for another folder they own.
+- `uninstall.ps1` without a registry entry removes the folder it runs from.
+
 ## v0.6.0
 
 Install and update without IT: an agent can install olctl from this repository.
